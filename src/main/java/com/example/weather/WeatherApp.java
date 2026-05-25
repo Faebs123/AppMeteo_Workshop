@@ -3,12 +3,21 @@ package com.example.weather;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -27,28 +36,66 @@ public class WeatherApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        Label title = new Label("Meteo App");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
+        title.setTextFill(Color.WHITE);
+
         TextField cityField = new TextField();
-        cityField.setPromptText("Città o località");
-        Button searchBtn = new Button("Cerca");
+        cityField.setPromptText("Inserisci una città, Roma, Milano, ...");
+        cityField.setStyle(
+            "-fx-font-size: 15px; -fx-padding: 10 14; -fx-background-radius: 24; " +
+            "-fx-border-radius: 24; -fx-background-color: white; -fx-prompt-text-fill: #888;"
+        );
+        cityField.setMaxWidth(320);
+
+        Button searchBtn = new Button("CERCA");
+        searchBtn.setStyle(
+            "-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white; " +
+            "-fx-background-color: #3b82f6; -fx-background-radius: 24; -fx-padding: 10 32; " +
+            "-fx-cursor: hand;"
+        );
+        searchBtn.setOnMouseEntered(e ->
+            searchBtn.setStyle(
+                "-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white; " +
+                "-fx-background-color: #2563eb; -fx-background-radius: 24; -fx-padding: 10 32; " +
+                "-fx-cursor: hand;"
+            )
+        );
+        searchBtn.setOnMouseExited(e ->
+            searchBtn.setStyle(
+                "-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white; " +
+                "-fx-background-color: #3b82f6; -fx-background-radius: 24; -fx-padding: 10 32; " +
+                "-fx-cursor: hand;"
+            )
+        );
+
         Label resultLabel = new Label();
+        resultLabel.setFont(Font.font("Segoe UI", FontWeight.LIGHT, 40));
+        resultLabel.setTextFill(Color.WHITE);
+        resultLabel.setWrapText(true);
+        resultLabel.setAlignment(Pos.CENTER);
 
         searchBtn.setOnAction(e -> {
             String city = cityField.getText().trim();
             if (!city.isEmpty()) {
+                resultLabel.setText("Caricamento...");
                 fetchWeather(city, resultLabel);
             }
         });
 
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(10));
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.add(new Label("Località:"), 0, 0);
-        grid.add(cityField, 1, 0);
-        grid.add(searchBtn, 2, 0);
-        grid.add(resultLabel, 0, 1, 3, 1);
+        cityField.setOnAction(e -> searchBtn.fire());
 
-        primaryStage.setScene(new Scene(grid, 450, 150));
+        VBox root = new VBox(20, title, cityField, searchBtn, resultLabel);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(40, 30, 50, 30));
+        root.setBackground(new Background(new BackgroundFill(
+            new LinearGradient(0, 0, 0, 1, true, null,
+                new Stop(0, Color.web("#1e3c72")),
+                new Stop(1, Color.web("#2a5298"))),
+            CornerRadii.EMPTY, Insets.EMPTY
+        )));
+
+        primaryStage.setScene(new Scene(root, 480, 460));
         primaryStage.setTitle("Meteo App");
         primaryStage.show();
     }
@@ -87,7 +134,7 @@ public class WeatherApp extends Application {
                 JsonNode weatherData = mapper.readTree(weatherResp.body());
                 double temp = weatherData.at("/current/temperature_2m").asDouble();
                 int code = weatherData.at("/current/weather_code").asInt();
-                return String.format("%.1f °C (%s)", temp, weatherDescription(code));
+                return String.format("%.1f °C\n%s", temp, weatherDescription(code));
             }
         };
 
@@ -97,21 +144,22 @@ public class WeatherApp extends Application {
             Alert a = new Alert(Alert.AlertType.ERROR);
             a.setContentText("Errore: " + ex.getMessage());
             a.showAndWait();
+            resultLabel.setText("");
         });
 
         new Thread(task).start();
     }
 
     private String weatherDescription(int code) {
-        if (code == 0) return "Sereno";
-        if (code <= 3) return "Nuvoloso";
-        if (code <= 48) return "Nebbia";
-        if (code <= 57) return "Pioggerella";
-        if (code <= 67) return "Pioggia";
-        if (code <= 77) return "Neve";
-        if (code <= 82) return "Rovesci";
-        if (code <= 86) return "Nevischio";
-        return "Temporale";
+        if (code == 0) return "\u2600\uFE0F Sereno";
+        if (code <= 3) return "\u26C5 Nuvoloso";
+        if (code <= 48) return "\uD83C\uDF2B\uFE0F Nebbia";
+        if (code <= 57) return "\uD83C\uDF26\uFE0F\uFE0F Pioggerella";
+        if (code <= 67) return "\uD83C\uDF27\uFE0F Pioggia";
+        if (code <= 77) return "\u2744\uFE0F Neve";
+        if (code <= 82) return "\uD83C\uDF28\uFE0F Rovesci";
+        if (code <= 86) return "\uD83C\uDF28\uFE0F Nevischio";
+        return "\u26A1 Temporale";
     }
 
     public static void main(String[] args) {
