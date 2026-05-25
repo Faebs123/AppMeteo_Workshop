@@ -1,16 +1,67 @@
 #!/bin/bash
-# Meteo App — script autosufficiente
-# Utilizzo: ./meteo.sh
+# Meteo App — script autosufficiente e portabile
+# Utilizzo: ./meteo.sh [OPZIONE]
+#   --install    Installa in ~/.local/bin/meteo (aggiungi al PATH)
+#   --help       Mostra questo messaggio
+#
 # Richiede: Java 17+ (JDK con javac), curl, unzip
+# Supporta: Linux (x86_64, aarch64), macOS (x86_64, arm64)
 
 set -euo pipefail
 
+VERSION="1.0"
+
+usage() {
+    sed -n '3,/^$/ s/^# //p' "$0"
+    exit 0
+}
+
+# --- Rilevamento piattaforma ---
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+
+case "$OS" in
+    linux)  JFX_OS="linux" ;;
+    darwin) JFX_OS="osx"   ;;
+    *)
+        echo "Errore: sistema operativo non supportato ($OS)." >&2
+        exit 1
+        ;;
+esac
+
+case "$ARCH" in
+    x86_64|amd64)  JFX_ARCH="x64"       ;;
+    aarch64|arm64) JFX_ARCH="aarch64"    ;;
+    *)
+        echo "Errore: architettura non supportata ($ARCH)." >&2
+        exit 1
+        ;;
+esac
+
+# --- Directory ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/meteo-app"
+case "$OS" in
+    linux)   CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/meteo-app" ;;
+    darwin)  CACHE_DIR="$HOME/Library/Caches/meteo-app"            ;;
+esac
 JAVAFX_HOME="$CACHE_DIR/javafx"
 JACKSON_HOME="$CACHE_DIR/jackson"
-WORK_DIR=$(mktemp -d)
 
+# --- Installa in PATH ---
+if [ "${1:-}" = "--install" ]; then
+    INSTALL_DIR="${HOME}/.local/bin"
+    mkdir -p "$INSTALL_DIR"
+    cp "$0" "$INSTALL_DIR/meteo"
+    chmod +x "$INSTALL_DIR/meteo"
+    echo "Installato in $INSTALL_DIR/meteo"
+    echo "Assicurati che $INSTALL_DIR sia nel tuo PATH."
+    echo "Poi usa: meteo"
+    exit 0
+fi
+
+[ "${1:-}" = "--help" ] && usage
+
+WORK_DIR=$(mktemp -d)
 cleanup() { rm -rf "$WORK_DIR"; }
 trap cleanup EXIT
 
@@ -28,10 +79,12 @@ fi
 
 # --- Scarica JavaFX SDK ---
 JAVAFX_VERSION=23
+JFX_FILE="openjfx-${JAVAFX_VERSION}_${JFX_OS}-${JFX_ARCH}_bin-sdk.zip"
+
 if [ ! -f "$JAVAFX_HOME/lib/javafx-controls.jar" ]; then
-    echo "Scarico JavaFX SDK $JAVAFX_VERSION..."
+    echo "Scarico JavaFX SDK $JAVAFX_VERSION ($JFX_OS-$JFX_ARCH)..."
     mkdir -p "$JAVAFX_HOME"
-    URL="https://download2.gluonhq.com/openjfx/$JAVAFX_VERSION/openjfx-${JAVAFX_VERSION}_linux-x64_bin-sdk.zip"
+    URL="https://download2.gluonhq.com/openjfx/$JAVAFX_VERSION/$JFX_FILE"
     curl -#L -o /tmp/javafx.zip "$URL"
     unzip -qo /tmp/javafx.zip -d "$JAVAFX_HOME"
     mv "$JAVAFX_HOME/javafx-sdk-$JAVAFX_VERSION"/* "$JAVAFX_HOME/"
@@ -52,7 +105,6 @@ if [ ! -f "$JACKSON_HOME/jackson-databind.jar" ]; then
 fi
 
 JACKSON_LIBS=$(echo "$JACKSON_HOME"/*.jar | tr ' ' ':')
-CLASSPATH="$JAVAFX_LIBS:$JACKSON_LIBS"
 
 # --- Estrai e compila il sorgente ---
 mkdir -p "$WORK_DIR/com/example/weather"
@@ -319,8 +371,10 @@ public class WeatherApp extends Application {
 JAVAEOF
 
 echo "Compilazione in corso..."
-javac -d "$WORK_DIR/classes" -cp "$CLASSPATH" "$WORK_DIR/com/example/weather/WeatherApp.java"
+javac -d "$WORK_DIR/classes" -cp "$JAVAFX_LIBS:$JACKSON_LIBS" \
+    "$WORK_DIR/com/example/weather/WeatherApp.java"
 
 echo "Avvio Meteo App..."
-java --module-path "$JAVAFX_HOME/lib" --add-modules javafx.controls -cp "$WORK_DIR/classes:$JACKSON_LIBS" \
+java --module-path "$JAVAFX_HOME/lib" --add-modules javafx.controls \
+    -cp "$WORK_DIR/classes:$JACKSON_LIBS" \
     com.example.weather.WeatherApp
