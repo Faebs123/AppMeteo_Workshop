@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Meteo App
+Comment=Visualizza il meteo di una località
+Exec=/home/batman/Desktop/PCTO/launch.sh
+Path=/home/batman/Desktop/PCTO
+Icon=utilities-terminal
+Terminal=false
+Categories=Utility;
