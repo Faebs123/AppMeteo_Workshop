@@ -5,6 +5,6 @@ Name=Meteo App
 Comment=Visualizza il meteo di una località
 Exec=/home/batman/Desktop/PCTO/launch.sh
 Path=/home/batman/Desktop/PCTO
-Icon=/home/batman/Desktop/PCTO/logoMeteo
+Icon=/home/batman/Desktop/PCTO/logoMeteo.png
 Terminal=false
 Categories=Utility;
