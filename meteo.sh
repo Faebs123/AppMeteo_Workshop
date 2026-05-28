@@ -119,7 +119,7 @@ public class WeatherApp {
 
         JPanel root = new GradientPanel();
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
-        root.setBorder(new EmptyBorder(30, 20, 30, 20));
+        root.setBorder(new EmptyBorder(24, 20, 20, 20));
 
         JLabel title = new JLabel("Meteo App", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 26));
@@ -132,9 +132,24 @@ public class WeatherApp {
         cityField = new JTextField(18);
         cityField.putClientProperty("JTextField.placeholderText", "Roma, Milano, Tokyo...");
         cityField.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        cityField.setPreferredSize(new Dimension(220, 38));
+        cityField.setPreferredSize(new Dimension(220, 40));
+        cityField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true),
+            BorderFactory.createEmptyBorder(8, 14, 8, 14)));
+        cityField.addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent e) {
+                cityField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 255, 255, 200), 2, true),
+                    BorderFactory.createEmptyBorder(7, 13, 7, 13)));
+            }
+            public void focusLost(FocusEvent e) {
+                cityField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true),
+                    BorderFactory.createEmptyBorder(8, 14, 8, 14)));
+            }
+        });
 
-        JButton searchBtn = styledButton("CERCA");
+        JButton searchBtn = new StyledButton("CERCA", new Color(59, 130, 246));
         searchRow.add(cityField);
         searchRow.add(searchBtn);
 
@@ -143,6 +158,19 @@ public class WeatherApp {
         loadingLabel.setForeground(new Color(255, 255, 255, 200));
         loadingLabel.setVisible(false);
         loadingLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        javax.swing.Timer pulse = new javax.swing.Timer(600, e -> {
+            float a = loadingLabel.getForeground().getAlpha() == 200 ? 100 : 200;
+            loadingLabel.setForeground(new Color(255, 255, 255, (int) a));
+        });
+        pulse.setRepeats(true);
+
+        loadingLabel.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0) {
+                if (loadingLabel.isShowing()) pulse.start();
+                else pulse.stop();
+            }
+        });
 
         errorLabel = new JLabel("", SwingConstants.CENTER);
         errorLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
@@ -158,12 +186,13 @@ public class WeatherApp {
         cityField.addActionListener(e -> search());
 
         root.add(title);
-        root.add(Box.createVerticalStrut(10));
+        root.add(Box.createVerticalStrut(14));
         root.add(searchRow);
-        root.add(Box.createVerticalStrut(8));
+        root.add(Box.createVerticalStrut(6));
         root.add(errorLabel);
+        root.add(Box.createVerticalStrut(2));
         root.add(loadingLabel);
-        root.add(Box.createVerticalStrut(8));
+        root.add(Box.createVerticalStrut(12));
         root.add(contentPanel);
 
         frame.add(root);
@@ -235,12 +264,12 @@ public class WeatherApp {
         cityLabel.setForeground(new Color(255, 255, 255, 218));
         cityLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
         btnRow.setOpaque(false);
 
-        JButton currentBtn = styledButton("Condizioni attuali");
+        JButton currentBtn = new StyledButton("Condizioni attuali", new Color(5, 150, 105));
         currentBtn.addActionListener(e -> showCurrent());
-        JButton reportBtn = styledButton("Report giornaliero");
+        JButton reportBtn = new StyledButton("Report giornaliero", new Color(217, 119, 6));
         reportBtn.addActionListener(e -> showReport());
 
         btnRow.add(currentBtn);
@@ -253,15 +282,18 @@ public class WeatherApp {
     }
 
     private void showCurrent() {
-        showChoiceButtons();
+        contentPanel.removeAll();
+
+        contentPanel.add(backHeader());
+        contentPanel.add(Box.createVerticalStrut(6));
 
         RoundedPanel card = new RoundedPanel(20);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setOpaque(false);
-        card.setBackground(new Color(255, 255, 255, 30));
-        card.setBorder(new EmptyBorder(24, 28, 24, 28));
+        card.setBackground(new Color(255, 255, 255, 55));
+        card.setBorder(new EmptyBorder(28, 32, 28, 32));
         card.setAlignmentX(Component.CENTER_ALIGNMENT);
-        card.setMaximumSize(new Dimension(400, 400));
+        card.setMaximumSize(new Dimension(420, 420));
 
         JLabel tempLabel = new JLabel(String.format("%.1f°", lastData.temp()), SwingConstants.CENTER);
         tempLabel.setFont(new Font("SansSerif", Font.PLAIN, 58));
@@ -282,19 +314,19 @@ public class WeatherApp {
         sep.setMaximumSize(new Dimension(160, 1));
         sep.setForeground(new Color(255, 255, 255, 50));
 
-        JPanel details = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0));
+        JPanel details = new JPanel(new FlowLayout(FlowLayout.CENTER, 36, 0));
         details.setOpaque(false);
         details.add(detailBox("Umidit\u00e0", lastData.humidity() + "%"));
         details.add(detailBox("Vento", String.format("%.0f km/h", lastData.wind())));
 
         card.add(tempLabel);
-        card.add(Box.createVerticalStrut(2));
+        card.add(Box.createVerticalStrut(4));
         card.add(descLabel);
-        card.add(Box.createVerticalStrut(2));
+        card.add(Box.createVerticalStrut(4));
         card.add(feelsLabel);
-        card.add(Box.createVerticalStrut(10));
+        card.add(Box.createVerticalStrut(14));
         card.add(sep);
-        card.add(Box.createVerticalStrut(10));
+        card.add(Box.createVerticalStrut(14));
         card.add(details);
 
         JPanel wrapper = new JPanel(new GridBagLayout());
@@ -305,8 +337,41 @@ public class WeatherApp {
         refresh();
     }
 
+    private JPanel backHeader() {
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        header.setOpaque(false);
+        header.setMaximumSize(new Dimension(700, 40));
+        header.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JButton backBtn = new JButton("\u25C0");
+        backBtn.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        backBtn.setForeground(Color.WHITE);
+        backBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        backBtn.setFocusPainted(false);
+        backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        backBtn.setOpaque(false);
+        backBtn.setContentAreaFilled(false);
+        backBtn.setBorderPainted(false);
+        backBtn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { backBtn.setForeground(new Color(180, 220, 255)); }
+            public void mouseExited(MouseEvent e) { backBtn.setForeground(Color.WHITE); }
+        });
+        backBtn.addActionListener(e -> showChoiceButtons());
+
+        JLabel cityLabel = new JLabel(lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country()));
+        cityLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        cityLabel.setForeground(new Color(255, 255, 255, 220));
+
+        header.add(backBtn);
+        header.add(cityLabel);
+        return header;
+    }
+
     private void showReport() {
-        showChoiceButtons();
+        contentPanel.removeAll();
+
+        contentPanel.add(backHeader());
+        contentPanel.add(Box.createVerticalStrut(4));
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         controls.setOpaque(false);
@@ -317,7 +382,7 @@ public class WeatherApp {
         JSpinner daySpinner = new JSpinner(new SpinnerNumberModel(7, 1, 16, 1));
         daySpinner.setPreferredSize(new Dimension(70, 30));
 
-        JButton generateBtn = styledButton("Genera");
+        JButton generateBtn = new StyledButton("Genera", new Color(59, 130, 246));
         JPanel chartContainer = new JPanel(new BorderLayout());
         chartContainer.setOpaque(false);
 
@@ -389,11 +454,41 @@ public class WeatherApp {
         avgs.add(avgBox("T Min media", String.format("%.1f\u00b0C", avgTMin), new Color(78, 205, 196)));
         avgs.add(avgBox("Vento medio", String.format("%.0f km/h", avgWind), new Color(255, 230, 109)));
 
+        ChartPanel chart = new ChartPanel(data);
+
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        legend.setOpaque(false);
+        legend.setBorder(new EmptyBorder(6, 0, 0, 0));
+        Color[] cols = {new Color(255, 107, 107), new Color(78, 205, 196), new Color(255, 230, 109)};
+        String[] names = {"T Max", "T Min", "Vento"};
+        for (int i = 0; i < 3; i++) {
+            final Color ci = cols[i];
+            final String ni = names[i];
+            JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            item.setOpaque(false);
+            JPanel dot = new JPanel() {
+                public Dimension getPreferredSize() { return new Dimension(10, 10); }
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g;
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(ci);
+                    g2.fillOval(0, 0, 10, 10);
+                }
+            };
+            dot.setOpaque(false);
+            JLabel lbl = new JLabel(ni);
+            lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            lbl.setForeground(new Color(255, 255, 255, 210));
+            item.add(dot);
+            item.add(lbl);
+            legend.add(item);
+        }
+
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         wrapper.add(avgs, BorderLayout.NORTH);
-        wrapper.add(new ChartPanel(data), BorderLayout.CENTER);
-
+        wrapper.add(chart, BorderLayout.CENTER);
+        wrapper.add(legend, BorderLayout.SOUTH);
         return wrapper;
     }
 
@@ -415,22 +510,58 @@ public class WeatherApp {
         return mapper.readTree(resp.body());
     }
 
-    private JButton styledButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.BOLD, 13));
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(new Color(59, 130, 246));
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 22, 8, 22));
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setOpaque(false);
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btn.setBackground(new Color(37, 99, 235)); }
-            public void mouseExited(MouseEvent e) { btn.setBackground(new Color(59, 130, 246)); }
-        });
-        return btn;
+    // --- Custom components ---
+
+    static class StyledButton extends JButton {
+        private final Color baseColor;
+        private final Color hoverColor;
+        private final Color pressColor;
+        private boolean hovered, pressed;
+
+        StyledButton(String text, Color base) {
+            super(text);
+            this.baseColor = base;
+            this.hoverColor = base.darker();
+            this.pressColor = new Color(
+                Math.max(0, base.getRed() - 60),
+                Math.max(0, base.getGreen() - 60),
+                Math.max(0, base.getBlue() - 60));
+            setFont(new Font("SansSerif", Font.BOLD, 14));
+            setForeground(Color.WHITE);
+            setBorder(BorderFactory.createEmptyBorder(11, 28, 11, 28));
+            setFocusPainted(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setOpaque(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            addMouseListener(new MouseAdapter() {
+                public void mousePressed(MouseEvent e) { pressed = true; repaint(); }
+                public void mouseReleased(MouseEvent e) { pressed = false; repaint(); }
+                public void mouseEntered(MouseEvent e) { hovered = true; repaint(); }
+                public void mouseExited(MouseEvent e) { hovered = false; pressed = false; repaint(); }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight(), r = 24;
+            if (pressed) {
+                g2.setColor(pressColor);
+                g2.fillRoundRect(1, 1, w - 2, h - 2, r, r);
+            } else if (hovered) {
+                g2.setColor(hoverColor);
+                g2.fillRoundRect(0, 0, w, h, r, r);
+                g2.setColor(new Color(255, 255, 255, 30));
+                g2.fillRoundRect(0, 0, w, h / 2, r, r);
+            } else {
+                g2.setColor(baseColor);
+                g2.fillRoundRect(0, 0, w, h, r, r);
+            }
+            super.paintComponent(g2);
+            g2.dispose();
+        }
     }
 
     private JPanel detailBox(String label, String value) {
@@ -454,7 +585,7 @@ public class WeatherApp {
         JPanel box = new JPanel();
         box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
         box.setOpaque(false);
-        box.setBackground(new Color(255, 255, 255, 15));
+        box.setBackground(new Color(255, 255, 255, 30));
         box.setBorder(new EmptyBorder(10, 14, 10, 14));
         JLabel val = new JLabel(value, SwingConstants.CENTER);
         val.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -485,8 +616,6 @@ public class WeatherApp {
         if (code <= 86) return "\uD83C\uDF28 Nevischio";
         return "\u26A1 Temporale";
     }
-
-    // --- Custom components ---
 
     static class GradientPanel extends JPanel {
         @Override
@@ -521,12 +650,11 @@ public class WeatherApp {
             new Color(78, 205, 196),
             new Color(255, 230, 109)
         };
-        private static final String[] NAMES = {"T Max", "T Min", "Vento"};
 
         ChartPanel(List<DailyData> data) {
             this.data = data;
             setOpaque(false);
-            setPreferredSize(new Dimension(440, 240));
+            setPreferredSize(new Dimension(480, 300));
         }
 
         @Override
@@ -537,7 +665,7 @@ public class WeatherApp {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
-            int padL = 50, padR = 20, padT = 20, padB = 40;
+            int padL = 50, padR = 24, padT = 24, padB = 48;
             int w = getWidth(), h = getHeight();
             int cw = w - padL - padR, ch = h - padT - padB;
 
@@ -597,18 +725,6 @@ public class WeatherApp {
                 for (int i = 0; i < n; i++) {
                     g2.fillOval(px[i] - 3, py[i] - 3, 6, 6);
                 }
-            }
-
-            // Legend
-            int lx = padL + cw - 160, ly = padT + 4;
-            g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
-            for (int s = 0; s < 3; s++) {
-                g2.setColor(new Color(255, 255, 255, 30));
-                g2.fillRect(lx, ly + s * 18, 50, 16);
-                g2.setColor(COLORS[s]);
-                g2.fillRect(lx + 2, ly + s * 18 + 3, 10, 10);
-                g2.setColor(new Color(255, 255, 255, 200));
-                g2.drawString(NAMES[s], lx + 16, ly + s * 18 + 12);
             }
 
             g2.dispose();
