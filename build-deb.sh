@@ -5,6 +5,7 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VERSION="1.0"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/meteo-app-build"
 JAVAFX_HOME="$CACHE_DIR/javafx"
@@ -518,26 +519,9 @@ done
 jar cfe "$DIST_DIR/meteoapp.jar" com.example.weather.WeatherApp .
 cd "$OLDPWD"
 
-# --- Crea icona ---
+# --- Icona ---
 mkdir -p "$BUILD_DIR/icon"
-# Genera un'icona PNG semplice (cerchio blu con bianco)
-# Se ImageMagick è disponibile, crea un'icona decorosa
-if command -v convert &>/dev/null; then
-    convert -size 256x256 xc:'#203a43' -fill white \
-        -font Helvetica -pointsize 100 -gravity center \
-        -annotate 0 '°C' -fill '#3b82f6' \
-        -draw "circle 128,128 128,20" -fill none -stroke white -strokewidth 4 \
-        -draw "circle 128,128 128,20" \
-        "$BUILD_DIR/icon/meteoapp.png" 2>/dev/null || \
-    convert -size 256x256 xc:'#3b82f6' -fill white \
-        -font Helvetica -pointsize 100 -gravity center \
-        -annotate 0 '°C' \
-        "$BUILD_DIR/icon/meteoapp.png" 2>/dev/null || \
-        # Fallback: copia logo esistente
-        cp "$SCRIPT_DIR/logoMeteo.png" "$BUILD_DIR/icon/meteoapp.png" 2>/dev/null || true
-else
-    cp "$SCRIPT_DIR/logoMeteo.png" "$BUILD_DIR/icon/meteoapp.png" 2>/dev/null || true
-fi
+cp "$SCRIPT_DIR/logoMeteo.png" "$BUILD_DIR/icon/meteoapp.png" 2>/dev/null || true
 
 echo "Creazione pacchetto .deb con jpackage..."
 
