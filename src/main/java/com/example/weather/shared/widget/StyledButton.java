@@ -1,4 +1,4 @@
-package com.example.weather;
+package com.example.weather.shared.widget;
 
 import javax.swing.*;
 import java.awt.*;

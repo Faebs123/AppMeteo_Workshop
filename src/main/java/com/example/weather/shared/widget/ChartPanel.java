@@ -1,4 +1,6 @@
-package com.example.weather;
+package com.example.weather.shared.widget;
+
+import com.example.weather.shared.model.DailyData;
 
 import javax.swing.*;
 import java.awt.*;
@@ -75,13 +77,11 @@ public class ChartPanel extends JPanel {
                 px[i] = padL + cw * i / Math.max(n - 1, 1);
                 py[i] = padT + (int) ((max - vals[s][i]) / range * ch);
             }
-            for (int i = 1; i < n; i++) {
+            for (int i = 1; i < n; i++)
                 g2.drawLine(px[i - 1], py[i - 1], px[i], py[i]);
-            }
             g2.setStroke(new BasicStroke(1));
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < n; i++)
                 g2.fillOval(px[i] - 3, py[i] - 3, 6, 6);
-            }
         }
 
         g2.dispose();
