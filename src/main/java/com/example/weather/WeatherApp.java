@@ -105,7 +105,7 @@ public class WeatherApp extends Application {
                 new Stop(1, Color.web("#2c5364"))),
             CornerRadii.EMPTY, Insets.EMPTY)));
 
-        primaryStage.setScene(new Scene(root, 500, 580));
+        primaryStage.setScene(new Scene(root, 700, 720));
         primaryStage.setTitle("Meteo App");
         primaryStage.show();
     }
