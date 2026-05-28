@@ -1,5 +1,6 @@
 package com.example.weather.search.view;
 
+import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.StyledButton;
 
 import javax.swing.*;
@@ -10,10 +11,7 @@ public class HomePanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
 
-        JLabel label = new JLabel(cityLabel, SwingConstants.CENTER);
-        label.setFont(new Font("SansSerif", Font.BOLD, 15));
-        label.setForeground(new Color(255, 255, 255, 218));
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel label = Labels.heading(cityLabel);
 
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
         btnRow.setOpaque(false);

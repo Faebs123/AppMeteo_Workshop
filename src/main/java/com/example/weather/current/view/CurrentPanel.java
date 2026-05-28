@@ -1,6 +1,7 @@
 package com.example.weather.current.view;
 
 import com.example.weather.shared.model.WeatherData;
+import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.RoundedPanel;
 
 import javax.swing.*;
@@ -18,20 +19,11 @@ public class CurrentPanel extends JPanel {
         card.setAlignmentX(Component.CENTER_ALIGNMENT);
         card.setMaximumSize(new Dimension(420, 420));
 
-        JLabel tempLabel = new JLabel(String.format("%.1f\u00b0", data.temp()), SwingConstants.CENTER);
-        tempLabel.setFont(new Font("SansSerif", Font.PLAIN, 58));
-        tempLabel.setForeground(Color.WHITE);
-        tempLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel tempLabel = Labels.hero(String.format("%.1f\u00b0", data.temp()));
 
-        JLabel descLabel = new JLabel(description, SwingConstants.CENTER);
-        descLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        descLabel.setForeground(new Color(255, 255, 255, 230));
-        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel descLabel = Labels.body(description);
 
-        JLabel feelsLabel = new JLabel(String.format("Percepita %.1f\u00b0", data.feelsLike()), SwingConstants.CENTER);
-        feelsLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        feelsLabel.setForeground(new Color(255, 255, 255, 179));
-        feelsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel feelsLabel = Labels.caption(String.format("Percepita %.1f\u00b0", data.feelsLike()));
 
         JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
         sep.setMaximumSize(new Dimension(160, 1));
@@ -63,16 +55,8 @@ public class CurrentPanel extends JPanel {
         JPanel box = new JPanel();
         box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
         box.setOpaque(false);
-        JLabel val = new JLabel(value, SwingConstants.CENTER);
-        val.setFont(new Font("SansSerif", Font.BOLD, 18));
-        val.setForeground(Color.WHITE);
-        val.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel lbl = new JLabel(label, SwingConstants.CENTER);
-        lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        lbl.setForeground(new Color(255, 255, 255, 179));
-        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
-        box.add(val);
-        box.add(lbl);
+        box.add(Labels.value(value));
+        box.add(Labels.caption(label));
         return box;
     }
 }

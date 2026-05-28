@@ -4,6 +4,7 @@ import com.example.weather.app.controller.WeatherController;
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.widget.GradientPanel;
+import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.StyledButton;
 import com.example.weather.current.view.CurrentPanel;
 import com.example.weather.forecast.view.ForecastPanel;
@@ -32,10 +33,7 @@ public class MainFrame extends JFrame {
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
         root.setBorder(new EmptyBorder(24, 20, 20, 20));
 
-        JLabel title = new JLabel("Meteo App", SwingConstants.CENTER);
-        title.setFont(new Font("SansSerif", Font.BOLD, 26));
-        title.setForeground(Color.WHITE);
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel title = Labels.title("Meteo App");
 
         JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         searchRow.setOpaque(false);
@@ -67,11 +65,8 @@ public class MainFrame extends JFrame {
         searchRow.add(cityField);
         searchRow.add(searchBtn);
 
-        loadingLabel = new JLabel("Caricamento...", SwingConstants.CENTER);
-        loadingLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        loadingLabel.setForeground(new Color(255, 255, 255, 200));
+        loadingLabel = Labels.loading("Caricamento...");
         loadingLabel.setVisible(false);
-        loadingLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         javax.swing.Timer pulse = new javax.swing.Timer(600, e -> {
             float a = loadingLabel.getForeground().getAlpha() == 200 ? 100 : 200;
@@ -85,11 +80,8 @@ public class MainFrame extends JFrame {
             }
         });
 
-        errorLabel = new JLabel("", SwingConstants.CENTER);
-        errorLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        errorLabel.setForeground(new Color(255, 200, 200));
+        errorLabel = Labels.error("");
         errorLabel.setVisible(false);
-        errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -194,9 +186,7 @@ public class MainFrame extends JFrame {
         });
         backBtn.addActionListener(e -> onBack.run());
 
-        JLabel label = new JLabel(cityLabel);
-        label.setFont(new Font("SansSerif", Font.BOLD, 14));
-        label.setForeground(new Color(255, 255, 255, 220));
+        JLabel label = Labels.subheading(cityLabel);
 
         header.add(backBtn);
         header.add(label);

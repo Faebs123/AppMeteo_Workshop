@@ -2,6 +2,7 @@ package com.example.weather.forecast.view;
 
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.widget.ChartPanel;
+import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.StyledButton;
 
 import javax.swing.*;
@@ -75,9 +76,7 @@ public class ForecastPanel extends JPanel {
                 }
             };
             dot.setOpaque(false);
-            JLabel lbl = new JLabel(ni);
-            lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            lbl.setForeground(new Color(255, 255, 255, 210));
+            JLabel lbl = Labels.small(ni);
             item.add(dot);
             item.add(lbl);
             legend.add(item);
@@ -100,14 +99,8 @@ public class ForecastPanel extends JPanel {
         box.setOpaque(false);
         box.setBackground(new Color(255, 255, 255, 30));
         box.setBorder(new EmptyBorder(10, 14, 10, 14));
-        JLabel val = new JLabel(value, SwingConstants.CENTER);
-        val.setFont(new Font("SansSerif", Font.BOLD, 16));
-        val.setForeground(color);
-        val.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel lbl = new JLabel(label, SwingConstants.CENTER);
-        lbl.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        lbl.setForeground(new Color(255, 255, 255, 179));
-        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel val = Labels.value(value, color);
+        JLabel lbl = Labels.caption(label);
         box.add(val);
         box.add(lbl);
         return box;
