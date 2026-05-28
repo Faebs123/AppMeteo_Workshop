@@ -2,8 +2,6 @@ package com.example.weather;
 
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -40,14 +38,12 @@ public class WeatherApp extends Application {
             .version(HttpClient.Version.HTTP_2).build();
     private final ObjectMapper mapper = new ObjectMapper();
     private Label errorLabel;
-    private VBox resultCard;
     private Label loadingLabel;
     private TextField cityField;
-    private TabPane tabPane;
-    private VBox reportCard;
-    private Label reportLoading;
-    private Label reportError;
-    private Spinner<Integer> daySpinner;
+    private VBox contentArea;
+    private WeatherData lastData;
+    private String lastCity;
+    private double lastLat, lastLon;
 
     private record WeatherData(String city, String country, double temp, double feelsLike, int humidity, double wind, int code) {}
     private record DailyData(String date, double tempMax, double tempMin, double windMax) {}
@@ -85,64 +81,21 @@ public class WeatherApp extends Application {
         errorLabel.setMaxWidth(380);
         errorLabel.setVisible(false);
 
-        resultCard = createResultCard();
-        resultCard.setVisible(false);
-        StackPane cardContainer = new StackPane(resultCard);
-        cardContainer.setAlignment(Pos.CENTER);
-        cardContainer.setMaxWidth(400);
-
-        Tab currentTab = new Tab("Corrente");
-        currentTab.setClosable(false);
-        currentTab.setContent(new StackPane(cardContainer));
-
-        reportCard = new VBox(12);
-        reportCard.setAlignment(Pos.CENTER);
-        reportCard.setVisible(false);
-        StackPane reportContainer = new StackPane(reportCard);
-        reportContainer.setAlignment(Pos.CENTER);
-
-        Tab reportTab = new Tab("Report");
-        reportTab.setClosable(false);
-        reportTab.setContent(reportContainer);
-
-        tabPane = new TabPane(currentTab, reportTab);
-        tabPane.setTabMinWidth(120);
-        tabPane.setStyle(
-            "-fx-background-color: transparent; -fx-tab-border-color: transparent; " +
-            " -fx-tab-label-background: transparent;");
-        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        VBox.setVgrow(tabPane, Priority.ALWAYS);
-
-        reportLoading = new Label("Caricamento...");
-        reportLoading.setFont(Font.font("System", 16));
-        reportLoading.setTextFill(Color.rgb(255, 255, 255, 0.8));
-        reportLoading.setVisible(false);
-
-        reportError = new Label();
-        reportError.setFont(Font.font("System", 13));
-        reportError.setTextFill(Color.rgb(255, 200, 200, 0.95));
-        reportError.setWrapText(true);
-        reportError.setAlignment(Pos.CENTER);
-        reportError.setMaxWidth(380);
-        reportError.setVisible(false);
-
-        daySpinner = new Spinner<>(1, 16, 7);
-        daySpinner.setEditable(true);
-        daySpinner.setPrefWidth(80);
-        daySpinner.setStyle("-fx-font-size: 14px; -fx-background-radius: 10;");
+        contentArea = new VBox(16);
+        contentArea.setAlignment(Pos.TOP_CENTER);
+        VBox.setVgrow(contentArea, Priority.ALWAYS);
 
         searchBtn.setOnAction(e -> {
+            String city = cityField.getText().trim();
+            if (city.isEmpty()) return;
             errorLabel.setVisible(false);
-            resultCard.setVisible(false);
-            if (tabPane.getSelectionModel().getSelectedIndex() == 0) {
-                searchCurrent();
-            } else {
-                searchReport();
-            }
+            contentArea.getChildren().clear();
+            loadingLabel.setVisible(true);
+            fetchWeather(city);
         });
         cityField.setOnAction(e -> searchBtn.fire());
 
-        VBox root = new VBox(16, title, searchRow, errorLabel, loadingLabel, tabPane);
+        VBox root = new VBox(16, title, searchRow, errorLabel, loadingLabel, contentArea);
         root.setAlignment(Pos.TOP_CENTER);
         root.setPadding(new Insets(30, 20, 30, 20));
         root.setBackground(new Background(new BackgroundFill(
@@ -152,28 +105,12 @@ public class WeatherApp extends Application {
                 new Stop(1, Color.web("#2c5364"))),
             CornerRadii.EMPTY, Insets.EMPTY)));
 
-        primaryStage.setScene(new Scene(root, 500, 560));
+        primaryStage.setScene(new Scene(root, 500, 580));
         primaryStage.setTitle("Meteo App");
         primaryStage.show();
     }
 
-    private void searchCurrent() {
-        String city = cityField.getText().trim();
-        if (city.isEmpty()) return;
-        loadingLabel.setVisible(true);
-        fetchWeather(city);
-    }
-
-    private void searchReport() {
-        String city = cityField.getText().trim();
-        if (city.isEmpty()) return;
-        loadingLabel.setVisible(true);
-        reportCard.setVisible(false);
-        reportError.setVisible(false);
-        fetchReport(city, daySpinner.getValue());
-    }
-
-    // --- Current weather ---
+    // --- Fetch ---
 
     private void fetchWeather(String city) {
         String encoded = URLEncoder.encode(city, StandardCharsets.UTF_8);
@@ -184,24 +121,24 @@ public class WeatherApp extends Application {
             @Override
             protected Void call() throws Exception {
                 JsonNode first = geocode(geoUrl, city);
-                String cityName = first.get("name").asText();
+                lastCity = first.get("name").asText();
                 String country = first.has("country_code") ? first.get("country_code").asText().toUpperCase() : "";
-                double lat = first.get("latitude").asDouble();
-                double lon = first.get("longitude").asDouble();
+                lastLat = first.get("latitude").asDouble();
+                lastLon = first.get("longitude").asDouble();
 
                 String weatherUrl = String.format(
                     "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +
                     "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
-                    lat, lon);
+                    lastLat, lastLon);
                 JsonNode w = fetchJson(weatherUrl).at("/current");
 
-                WeatherData data = new WeatherData(cityName, country,
+                lastData = new WeatherData(lastCity, country,
                     w.get("temperature_2m").asDouble(),
                     w.get("apparent_temperature").asDouble(),
                     w.get("relative_humidity_2m").asInt(),
                     w.get("wind_speed_10m").asDouble(),
                     w.get("weather_code").asInt());
-                javafx.application.Platform.runLater(() -> showResult(data));
+                javafx.application.Platform.runLater(() -> showChoiceButtons());
                 return null;
             }
 
@@ -215,26 +152,48 @@ public class WeatherApp extends Application {
         new Thread(task).start();
     }
 
-    private void showResult(WeatherData data) {
-        loadingLabel.setVisible(false);
-        resultCard.getChildren().clear();
+    // --- Views ---
 
-        Label cityLabel = new Label(data.city + (data.country.isEmpty() ? "" : ", " + data.country));
+    private void showChoiceButtons() {
+        loadingLabel.setVisible(false);
+        contentArea.getChildren().clear();
+
+        Label cityLabel = new Label(lastData.city + (lastData.country().isEmpty() ? "" : ", " + lastData.country()));
         cityLabel.setFont(Font.font("System", FontWeight.SEMI_BOLD, 15));
         cityLabel.setTextFill(Color.rgb(255, 255, 255, 0.85));
-        cityLabel.setAlignment(Pos.CENTER);
 
-        Label tempLabel = new Label(String.format("%.1f°", data.temp));
+        Button currentBtn = styledButton("Condizioni attuali");
+        currentBtn.setOnMouseEntered(e -> styleHover(currentBtn, "#059669", "rgba(5,150,105,0.5)"));
+        currentBtn.setOnMouseExited(e -> styleHover(currentBtn, "#059669", "rgba(5,150,105,0.4)"));
+        currentBtn.setOnAction(e -> showCurrent());
+
+        Button reportBtn = styledButton("Report giornaliero");
+        reportBtn.setOnMouseEntered(e -> styleHover(reportBtn, "#d97706", "rgba(217,119,6,0.5)"));
+        reportBtn.setOnMouseExited(e -> styleHover(reportBtn, "#d97706", "rgba(217,119,6,0.4)"));
+        reportBtn.setOnAction(e -> showReport());
+
+        HBox btnRow = new HBox(14, currentBtn, reportBtn);
+        btnRow.setAlignment(Pos.CENTER);
+
+        contentArea.getChildren().addAll(cityLabel, btnRow);
+    }
+
+    private void showCurrent() {
+        contentArea.getChildren().clear();
+        showChoiceButtons();
+
+        VBox card = createResultCard();
+        Label tempLabel = new Label(String.format("%.1f°", lastData.temp()));
         tempLabel.setFont(Font.font("System", FontWeight.THIN, 58));
         tempLabel.setTextFill(Color.WHITE);
         tempLabel.setAlignment(Pos.CENTER);
 
-        Label descLabel = new Label(weatherDescription(data.code));
+        Label descLabel = new Label(weatherDescription(lastData.code()));
         descLabel.setFont(Font.font("System", 16));
         descLabel.setTextFill(Color.rgb(255, 255, 255, 0.9));
         descLabel.setAlignment(Pos.CENTER);
 
-        Label feelsLabel = new Label(String.format("Percepita %.1f°", data.feelsLike));
+        Label feelsLabel = new Label(String.format("Percepita %.1f°", lastData.feelsLike()));
         feelsLabel.setFont(Font.font("System", 13));
         feelsLabel.setTextFill(Color.rgb(255, 255, 255, 0.7));
         feelsLabel.setAlignment(Pos.CENTER);
@@ -242,96 +201,124 @@ public class WeatherApp extends Application {
         HBox details = new HBox(30);
         details.setAlignment(Pos.CENTER);
         details.getChildren().addAll(
-            detailBox("Umidità", data.humidity + "%"),
-            detailBox("Vento", String.format("%.0f km/h", data.wind)));
+            detailBox("Umidità", lastData.humidity() + "%"),
+            detailBox("Vento", String.format("%.0f km/h", lastData.wind())));
 
         Line sep = new Line(0, 0, 160, 0);
         sep.setStroke(Color.rgb(255, 255, 255, 0.2));
         sep.setStrokeWidth(1);
 
-        resultCard.getChildren().addAll(cityLabel, tempLabel, descLabel, feelsLabel, sep, details);
+        card.getChildren().addAll(tempLabel, descLabel, feelsLabel, sep, details);
 
-        FadeTransition ft = new FadeTransition(Duration.millis(400), resultCard);
+        StackPane cardContainer = new StackPane(card);
+        cardContainer.setAlignment(Pos.CENTER);
+        cardContainer.setMaxWidth(400);
+
+        FadeTransition ft = new FadeTransition(Duration.millis(400), card);
         ft.setFromValue(0);
         ft.setToValue(1);
-        resultCard.setVisible(true);
         ft.play();
+
+        contentArea.getChildren().add(cardContainer);
     }
 
-    // --- Report ---
+    private void showReport() {
+        contentArea.getChildren().clear();
+        showChoiceButtons();
 
-    private void fetchReport(String city, int days) {
-        String encoded = URLEncoder.encode(city, StandardCharsets.UTF_8);
-        String geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" + encoded
-                + "&count=1&language=it&format=json";
+        Spinner<Integer> daySpinner = new Spinner<>(1, 16, 7);
+        daySpinner.setEditable(true);
+        daySpinner.setPrefWidth(80);
+        daySpinner.setStyle("-fx-font-size: 14px; -fx-background-radius: 10;");
 
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                JsonNode first = geocode(geoUrl, city);
-                double lat = first.get("latitude").asDouble();
-                double lon = first.get("longitude").asDouble();
-
-                String weatherUrl = String.format(
-                    "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +
-                    "&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max" +
-                    "&timezone=auto&forecast_days=%d", lat, lon, days);
-                JsonNode daily = fetchJson(weatherUrl).get("daily");
-
-                List<DailyData> list = new ArrayList<>();
-                JsonNode dates = daily.get("time");
-                JsonNode tMax = daily.get("temperature_2m_max");
-                JsonNode tMin = daily.get("temperature_2m_min");
-                JsonNode wMax = daily.get("wind_speed_10m_max");
-                for (int i = 0; i < dates.size(); i++) {
-                    list.add(new DailyData(
-                        dates.get(i).asText(),
-                        tMax.get(i).asDouble(),
-                        tMin.get(i).asDouble(),
-                        wMax.get(i).asDouble()));
-                }
-                javafx.application.Platform.runLater(() -> showReport(list));
-                return null;
-            }
-
-            @Override
-            protected void failed() {
-                loadingLabel.setVisible(false);
-                reportError.setText(getException().getMessage());
-                reportError.setVisible(true);
-            }
-        };
-        new Thread(task).start();
-    }
-
-    private void showReport(List<DailyData> data) {
-        loadingLabel.setVisible(false);
-        reportCard.getChildren().clear();
-
-        Label title = new Label("Report " + daySpinner.getValue() + " giorni");
-        title.setFont(Font.font("System", FontWeight.BOLD, 16));
-        title.setTextFill(Color.WHITE);
-
-        HBox controls = new HBox(10, new Label("Giorni:"), daySpinner);
-        controls.setAlignment(Pos.CENTER);
         Label dayLabel = new Label("Giorni:");
         dayLabel.setTextFill(Color.rgb(255, 255, 255, 0.8));
-        controls.getChildren().set(0, dayLabel);
+
+        Button generateBtn = styledButton("Genera");
+        generateBtn.setOnMouseEntered(e -> styleHover(generateBtn, "#2563eb", "rgba(37,99,235,0.5)"));
+        generateBtn.setOnMouseExited(e -> styleHover(generateBtn, "#3b82f6", "rgba(59,130,246,0.4)"));
+
+        HBox controls = new HBox(10, dayLabel, daySpinner, generateBtn);
+        controls.setAlignment(Pos.CENTER);
+
+        VBox reportContent = new VBox(12);
+        reportContent.setAlignment(Pos.CENTER);
+
+        contentArea.getChildren().add(controls);
+
+        generateBtn.setOnAction(e -> {
+            reportContent.getChildren().clear();
+            loadingLabel.setVisible(true);
+            String weatherUrl = String.format(
+                "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +
+                "&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max" +
+                "&timezone=auto&forecast_days=%d", lastLat, lastLon, daySpinner.getValue());
+
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    JsonNode daily = fetchJson(weatherUrl).get("daily");
+                    List<DailyData> list = new ArrayList<>();
+                    JsonNode dates = daily.get("time");
+                    JsonNode tMax = daily.get("temperature_2m_max");
+                    JsonNode tMin = daily.get("temperature_2m_min");
+                    JsonNode wMax = daily.get("wind_speed_10m_max");
+                    for (int i = 0; i < dates.size(); i++) {
+                        list.add(new DailyData(
+                            dates.get(i).asText(),
+                            tMax.get(i).asDouble(),
+                            tMin.get(i).asDouble(),
+                            wMax.get(i).asDouble()));
+                    }
+                    javafx.application.Platform.runLater(() -> {
+                        loadingLabel.setVisible(false);
+                        showChart(reportContent, list, daySpinner.getValue());
+                    });
+                    return null;
+                }
+
+                @Override
+                protected void failed() {
+                    loadingLabel.setVisible(false);
+                    errorLabel.setText(getException().getMessage());
+                    errorLabel.setVisible(true);
+                }
+            };
+            new Thread(task).start();
+        });
+
+        contentArea.getChildren().add(reportContent);
+    }
+
+    private void showChart(VBox container, List<DailyData> data, int days) {
+        container.getChildren().clear();
+
+        double avgTMax = data.stream().mapToDouble(DailyData::tempMax).average().orElse(0);
+        double avgTMin = data.stream().mapToDouble(DailyData::tempMin).average().orElse(0);
+        double avgWind = data.stream().mapToDouble(DailyData::windMax).average().orElse(0);
+
+        HBox avgs = new HBox(20);
+        avgs.setAlignment(Pos.CENTER);
+        avgs.getChildren().addAll(
+            avgBox("T Max media", String.format("%.1f°C", avgTMax), "#ff6b6b"),
+            avgBox("T Min media", String.format("%.1f°C", avgTMin), "#4ecdc4"),
+            avgBox("Vento medio", String.format("%.0f km/h", avgWind), "#ffe66d"));
 
         CategoryAxis xAxis = new CategoryAxis();
         NumberAxis yAxis = new NumberAxis();
         yAxis.setLabel("Temperatura (°C)");
 
         LineChart<String, Number> chart = new LineChart<>(xAxis, yAxis);
-        chart.setTitle("Andamento " + daySpinner.getValue() + " giorni");
+        chart.setTitle("Andamento " + days + " giorni");
         chart.setStyle(
             "-fx-background-color: transparent; " +
             "-fx-text-fill: white; " +
             "-fx-tick-label-fill: white;");
         chart.setLegendVisible(true);
         chart.setAnimated(false);
-        chart.setPrefHeight(260);
+        chart.setPrefHeight(220);
         chart.setCreateSymbols(true);
+        chart.setMaxWidth(440);
         chart.lookup(".chart-legend").setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
 
         xAxis.setTickLabelRotation(45);
@@ -352,13 +339,24 @@ public class WeatherApp extends Application {
 
         chart.getData().addAll(maxSeries, minSeries, windSeries);
 
-        // Style series
-        maxSeries.getNode().lookup(".chart-series-line").setStyle("-fx-stroke: #ff6b6b;");
-        minSeries.getNode().lookup(".chart-series-line").setStyle("-fx-stroke: #4ecdc4;");
-        windSeries.getNode().lookup(".chart-series-line").setStyle("-fx-stroke: #ffe66d;");
+        container.getChildren().addAll(avgs, chart);
+    }
 
-        reportCard.getChildren().addAll(title, controls, chart);
-        reportCard.setVisible(true);
+    private VBox avgBox(String label, String value, String color) {
+        Label val = new Label(value);
+        val.setFont(Font.font("System", FontWeight.BOLD, 16));
+        val.setTextFill(Color.web(color));
+        val.setAlignment(Pos.CENTER);
+        Label lbl = new Label(label);
+        lbl.setFont(Font.font("System", 11));
+        lbl.setTextFill(Color.rgb(255, 255, 255, 0.7));
+        lbl.setAlignment(Pos.CENTER);
+        VBox box = new VBox(2, val, lbl);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(10, 14, 10, 14));
+        box.setBackground(new Background(new BackgroundFill(
+            Color.rgb(255, 255, 255, 0.06), new CornerRadii(12), Insets.EMPTY)));
+        return box;
     }
 
     // --- Shared helpers ---
@@ -383,7 +381,7 @@ public class WeatherApp extends Application {
         Button btn = new Button(text);
         btn.setStyle(
             "-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white; " +
-            "-fx-background-color: #3b82f6; -fx-background-radius: 22; -fx-padding: 10 28; " +
+            "-fx-background-color: #3b82f6; -fx-background-radius: 22; -fx-padding: 10 22; " +
             "-fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.4), 8, 0, 0, 4);");
         return btn;
     }
@@ -391,7 +389,7 @@ public class WeatherApp extends Application {
     private void styleHover(Button btn, String color, String shadow) {
         btn.setStyle(
             "-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white; " +
-            "-fx-background-color: " + color + "; -fx-background-radius: 22; -fx-padding: 10 28; " +
+            "-fx-background-color: " + color + "; -fx-background-radius: 22; -fx-padding: 10 22; " +
             "-fx-cursor: hand; -fx-effect: dropshadow(gaussian, " + shadow + ", 12, 0, 0, 6);");
     }
 
