@@ -74,6 +74,215 @@ JACKSON_LIBS=$(echo "$JACKSON_HOME"/*.jar | tr ' ' ':')
 # --- Estrai e compila il sorgente ---
 mkdir -p "$WORK_DIR/com/example/weather"
 
+cat > "$WORK_DIR/com/example/weather/WeatherData.java" << 'JAVAEOF'
+package com.example.weather;
+
+record WeatherData(String city, String country, double temp, double feelsLike, int humidity, double wind, int code) {}
+JAVAEOF
+
+cat > "$WORK_DIR/com/example/weather/DailyData.java" << 'JAVAEOF'
+package com.example.weather;
+
+record DailyData(String date, double tempMax, double tempMin, double windMax) {}
+JAVAEOF
+
+cat > "$WORK_DIR/com/example/weather/StyledButton.java" << 'JAVAEOF'
+package com.example.weather;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class StyledButton extends JButton {
+    private final Color baseColor;
+    private final Color hoverColor;
+    private final Color pressColor;
+    private boolean hovered, pressed;
+
+    public StyledButton(String text, Color base) {
+        super(text);
+        this.baseColor = base;
+        this.hoverColor = base.darker();
+        this.pressColor = new Color(
+            Math.max(0, base.getRed() - 60),
+            Math.max(0, base.getGreen() - 60),
+            Math.max(0, base.getBlue() - 60));
+        setFont(new Font("SansSerif", Font.BOLD, 14));
+        setForeground(Color.WHITE);
+        setBorder(BorderFactory.createEmptyBorder(11, 28, 11, 28));
+        setFocusPainted(false);
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        setOpaque(false);
+        setContentAreaFilled(false);
+        setBorderPainted(false);
+        addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) { pressed = true; repaint(); }
+            public void mouseReleased(MouseEvent e) { pressed = false; repaint(); }
+            public void mouseEntered(MouseEvent e) { hovered = true; repaint(); }
+            public void mouseExited(MouseEvent e) { hovered = false; pressed = false; repaint(); }
+        });
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int w = getWidth(), h = getHeight(), r = 24;
+        if (pressed) {
+            g2.setColor(pressColor);
+            g2.fillRoundRect(1, 1, w - 2, h - 2, r, r);
+        } else if (hovered) {
+            g2.setColor(hoverColor);
+            g2.fillRoundRect(0, 0, w, h, r, r);
+            g2.setColor(new Color(255, 255, 255, 30));
+            g2.fillRoundRect(0, 0, w, h / 2, r, r);
+        } else {
+            g2.setColor(baseColor);
+            g2.fillRoundRect(0, 0, w, h, r, r);
+        }
+        super.paintComponent(g2);
+        g2.dispose();
+    }
+}
+JAVAEOF
+
+cat > "$WORK_DIR/com/example/weather/GradientPanel.java" << 'JAVAEOF'
+package com.example.weather;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class GradientPanel extends JPanel {
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+        int w = getWidth(), h = getHeight();
+        GradientPaint gp = new GradientPaint(0, 0, new Color(0x0f2027),
+            0, h, new Color(0x2c5364));
+        g2.setPaint(gp);
+        g2.fillRect(0, 0, w, h);
+    }
+}
+JAVAEOF
+
+cat > "$WORK_DIR/com/example/weather/RoundedPanel.java" << 'JAVAEOF'
+package com.example.weather;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class RoundedPanel extends JPanel {
+    private final int radius;
+
+    public RoundedPanel(int radius) {
+        this.radius = radius;
+        setOpaque(false);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(getBackground());
+        g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+        g2.dispose();
+    }
+}
+JAVAEOF
+
+cat > "$WORK_DIR/com/example/weather/ChartPanel.java" << 'JAVAEOF'
+package com.example.weather;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+
+public class ChartPanel extends JPanel {
+    private final List<DailyData> data;
+    private static final Color[] COLORS = {
+        new Color(255, 107, 107),
+        new Color(78, 205, 196),
+        new Color(255, 230, 109)
+    };
+
+    public ChartPanel(List<DailyData> data) {
+        this.data = data;
+        setOpaque(false);
+        setPreferredSize(new Dimension(480, 300));
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (data.isEmpty()) return;
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        int padL = 50, padR = 24, padT = 24, padB = 48;
+        int w = getWidth(), h = getHeight();
+        int cw = w - padL - padR, ch = h - padT - padB;
+
+        if (cw < 10 || ch < 10) { g2.dispose(); return; }
+
+        double min = Double.MAX_VALUE, max = -Double.MAX_VALUE;
+        for (DailyData d : data) {
+            min = Math.min(min, Math.min(d.tempMin(), Math.min(d.tempMax(), d.windMax())));
+            max = Math.max(max, Math.max(d.tempMax(), Math.max(d.tempMin(), d.windMax())));
+        }
+        double range = max - min;
+        if (range < 1) range = 1;
+
+        int n = data.size();
+        double[][] vals = new double[3][n];
+        for (int i = 0; i < n; i++) {
+            vals[0][i] = data.get(i).tempMax();
+            vals[1][i] = data.get(i).tempMin();
+            vals[2][i] = data.get(i).windMax();
+        }
+
+        g2.setColor(new Color(255, 255, 255, 30));
+        int ticks = 4;
+        for (int t = 0; t <= ticks; t++) {
+            int y = padT + ch * t / ticks;
+            g2.drawLine(padL, y, padL + cw, y);
+            String lbl = String.format("%.0f", max - range * t / ticks);
+            g2.setColor(new Color(255, 255, 255, 150));
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            g2.drawString(lbl, 2, y + 4);
+            g2.setColor(new Color(255, 255, 255, 30));
+        }
+
+        g2.setColor(new Color(255, 255, 255, 150));
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        for (int i = 0; i < n; i++) {
+            int x = padL + cw * i / Math.max(n - 1, 1);
+            g2.drawString(data.get(i).date().substring(5), x - 12, h - padB + 16);
+        }
+
+        for (int s = 0; s < 3; s++) {
+            g2.setColor(COLORS[s]);
+            g2.setStroke(new BasicStroke(2.5f));
+            int[] px = new int[n], py = new int[n];
+            for (int i = 0; i < n; i++) {
+                px[i] = padL + cw * i / Math.max(n - 1, 1);
+                py[i] = padT + (int) ((max - vals[s][i]) / range * ch);
+            }
+            for (int i = 1; i < n; i++) {
+                g2.drawLine(px[i - 1], py[i - 1], px[i], py[i]);
+            }
+            g2.setStroke(new BasicStroke(1));
+            for (int i = 0; i < n; i++) {
+                g2.fillOval(px[i] - 3, py[i] - 3, 6, 6);
+            }
+        }
+
+        g2.dispose();
+    }
+}
+JAVAEOF
+
 cat > "$WORK_DIR/com/example/weather/WeatherApp.java" << 'JAVAEOF'
 package com.example.weather;
 
@@ -103,9 +312,6 @@ public class WeatherApp {
     private JTextField cityField;
     private WeatherData lastData;
     private double lastLat, lastLon;
-
-    private record WeatherData(String city, String country, double temp, double feelsLike, int humidity, double wind, int code) {}
-    private record DailyData(String date, double tempMax, double tempMin, double windMax) {}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new WeatherApp().createAndShow());
@@ -199,8 +405,6 @@ public class WeatherApp {
         frame.setVisible(true);
     }
 
-    // --- Logic ---
-
     private void search() {
         String city = cityField.getText().trim();
         if (city.isEmpty()) return;
@@ -254,8 +458,6 @@ public class WeatherApp {
         worker.execute();
     }
 
-    // --- Views ---
-
     private void showChoiceButtons() {
         contentPanel.removeAll();
 
@@ -295,7 +497,7 @@ public class WeatherApp {
         card.setAlignmentX(Component.CENTER_ALIGNMENT);
         card.setMaximumSize(new Dimension(420, 420));
 
-        JLabel tempLabel = new JLabel(String.format("%.1f°", lastData.temp()), SwingConstants.CENTER);
+        JLabel tempLabel = new JLabel(String.format("%.1f\u00b0", lastData.temp()), SwingConstants.CENTER);
         tempLabel.setFont(new Font("SansSerif", Font.PLAIN, 58));
         tempLabel.setForeground(Color.WHITE);
         tempLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -305,7 +507,7 @@ public class WeatherApp {
         descLabel.setForeground(new Color(255, 255, 255, 230));
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel feelsLabel = new JLabel(String.format("Percepita %.1f°", lastData.feelsLike()), SwingConstants.CENTER);
+        JLabel feelsLabel = new JLabel(String.format("Percepita %.1f\u00b0", lastData.feelsLike()), SwingConstants.CENTER);
         feelsLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         feelsLabel.setForeground(new Color(255, 255, 255, 179));
         feelsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -492,8 +694,6 @@ public class WeatherApp {
         return wrapper;
     }
 
-    // --- Helpers ---
-
     private JsonNode geocode(String geoUrl, String city) throws Exception {
         JsonNode geoData = fetchJson(geoUrl);
         JsonNode results = geoData.get("results");
@@ -508,60 +708,6 @@ public class WeatherApp {
         if (resp.statusCode() != 200)
             throw new RuntimeException("Errore API: " + resp.statusCode() + " " + resp.body());
         return mapper.readTree(resp.body());
-    }
-
-    // --- Custom components ---
-
-    static class StyledButton extends JButton {
-        private final Color baseColor;
-        private final Color hoverColor;
-        private final Color pressColor;
-        private boolean hovered, pressed;
-
-        StyledButton(String text, Color base) {
-            super(text);
-            this.baseColor = base;
-            this.hoverColor = base.darker();
-            this.pressColor = new Color(
-                Math.max(0, base.getRed() - 60),
-                Math.max(0, base.getGreen() - 60),
-                Math.max(0, base.getBlue() - 60));
-            setFont(new Font("SansSerif", Font.BOLD, 14));
-            setForeground(Color.WHITE);
-            setBorder(BorderFactory.createEmptyBorder(11, 28, 11, 28));
-            setFocusPainted(false);
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setOpaque(false);
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            addMouseListener(new MouseAdapter() {
-                public void mousePressed(MouseEvent e) { pressed = true; repaint(); }
-                public void mouseReleased(MouseEvent e) { pressed = false; repaint(); }
-                public void mouseEntered(MouseEvent e) { hovered = true; repaint(); }
-                public void mouseExited(MouseEvent e) { hovered = false; pressed = false; repaint(); }
-            });
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int w = getWidth(), h = getHeight(), r = 24;
-            if (pressed) {
-                g2.setColor(pressColor);
-                g2.fillRoundRect(1, 1, w - 2, h - 2, r, r);
-            } else if (hovered) {
-                g2.setColor(hoverColor);
-                g2.fillRoundRect(0, 0, w, h, r, r);
-                g2.setColor(new Color(255, 255, 255, 30));
-                g2.fillRoundRect(0, 0, w, h / 2, r, r);
-            } else {
-                g2.setColor(baseColor);
-                g2.fillRoundRect(0, 0, w, h, r, r);
-            }
-            super.paintComponent(g2);
-            g2.dispose();
-        }
     }
 
     private JPanel detailBox(String label, String value) {
@@ -616,126 +762,12 @@ public class WeatherApp {
         if (code <= 86) return "\uD83C\uDF28 Nevischio";
         return "\u26A1 Temporale";
     }
-
-    static class GradientPanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g;
-            int w = getWidth(), h = getHeight();
-            GradientPaint gp = new GradientPaint(0, 0, new Color(0x0f2027),
-                0, h, new Color(0x2c5364));
-            g2.setPaint(gp);
-            g2.fillRect(0, 0, w, h);
-        }
-    }
-
-    static class RoundedPanel extends JPanel {
-        private final int radius;
-        public RoundedPanel(int radius) { this.radius = radius; setOpaque(false); }
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(getBackground());
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
-            g2.dispose();
-        }
-    }
-
-    static class ChartPanel extends JPanel {
-        private final List<DailyData> data;
-        private static final Color[] COLORS = {
-            new Color(255, 107, 107),
-            new Color(78, 205, 196),
-            new Color(255, 230, 109)
-        };
-
-        ChartPanel(List<DailyData> data) {
-            this.data = data;
-            setOpaque(false);
-            setPreferredSize(new Dimension(480, 300));
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (data.isEmpty()) return;
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-            int padL = 50, padR = 24, padT = 24, padB = 48;
-            int w = getWidth(), h = getHeight();
-            int cw = w - padL - padR, ch = h - padT - padB;
-
-            if (cw < 10 || ch < 10) { g2.dispose(); return; }
-
-            double min = Double.MAX_VALUE, max = -Double.MAX_VALUE;
-            for (DailyData d : data) {
-                min = Math.min(min, Math.min(d.tempMin(), Math.min(d.tempMax(), d.windMax())));
-                max = Math.max(max, Math.max(d.tempMax(), Math.max(d.tempMin(), d.windMax())));
-            }
-            double range = max - min;
-            if (range < 1) range = 1;
-
-            int n = data.size();
-            double[][] vals = new double[3][n];
-            for (int i = 0; i < n; i++) {
-                vals[0][i] = data.get(i).tempMax();
-                vals[1][i] = data.get(i).tempMin();
-                vals[2][i] = data.get(i).windMax();
-            }
-
-            // Grid lines & axis labels
-            g2.setColor(new Color(255, 255, 255, 30));
-            int ticks = 4;
-            for (int t = 0; t <= ticks; t++) {
-                int y = padT + ch * t / ticks;
-                g2.drawLine(padL, y, padL + cw, y);
-                String lbl = String.format("%.0f", max - range * t / ticks);
-                g2.setColor(new Color(255, 255, 255, 150));
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-                g2.drawString(lbl, 2, y + 4);
-                g2.setColor(new Color(255, 255, 255, 30));
-            }
-
-            // X labels
-            g2.setColor(new Color(255, 255, 255, 150));
-            g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-            for (int i = 0; i < n; i++) {
-                int x = padL + cw * i / Math.max(n - 1, 1);
-                g2.drawString(data.get(i).date().substring(5), x - 12, h - padB + 16);
-            }
-
-            // Series
-            for (int s = 0; s < 3; s++) {
-                g2.setColor(COLORS[s]);
-                g2.setStroke(new BasicStroke(2.5f));
-                int[] px = new int[n], py = new int[n];
-                for (int i = 0; i < n; i++) {
-                    px[i] = padL + cw * i / Math.max(n - 1, 1);
-                    py[i] = padT + (int) ((max - vals[s][i]) / range * ch);
-                }
-                for (int i = 1; i < n; i++) {
-                    g2.drawLine(px[i - 1], py[i - 1], px[i], py[i]);
-                }
-                // Dots
-                g2.setStroke(new BasicStroke(1));
-                for (int i = 0; i < n; i++) {
-                    g2.fillOval(px[i] - 3, py[i] - 3, 6, 6);
-                }
-            }
-
-            g2.dispose();
-        }
-    }
 }
 JAVAEOF
 
 echo "Compilazione in corso..."
 javac -d "$WORK_DIR/classes" -cp "$JACKSON_LIBS" \
-    "$WORK_DIR/com/example/weather/WeatherApp.java"
+    "$WORK_DIR/com/example/weather/"*.java
 
 echo "Avvio Meteo App..."
 java -cp "$WORK_DIR/classes:$JACKSON_LIBS" \
