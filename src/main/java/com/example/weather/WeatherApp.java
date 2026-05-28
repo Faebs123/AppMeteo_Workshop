@@ -1,27 +1,12 @@
 package com.example.weather;
 
-import javafx.animation.FadeTransition;
-import javafx.application.Application;
-import javafx.concurrent.Task;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.*;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.LinearGradient;
-import javafx.scene.paint.Stop;
-import javafx.scene.shape.Line;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
-import javafx.util.Duration;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.*;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -30,98 +15,107 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class WeatherApp extends Application {
+public class WeatherApp {
     private final HttpClient client = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_2).build();
     private final ObjectMapper mapper = new ObjectMapper();
-    private Label errorLabel;
-    private Label loadingLabel;
-    private TextField cityField;
-    private VBox contentArea;
+    private JFrame frame;
+    private JPanel contentPanel;
+    private JLabel loadingLabel, errorLabel;
+    private JTextField cityField;
     private WeatherData lastData;
-    private String lastCity;
     private double lastLat, lastLon;
 
     private record WeatherData(String city, String country, double temp, double feelsLike, int humidity, double wind, int code) {}
     private record DailyData(String date, double tempMax, double tempMin, double windMax) {}
 
-    @Override
-    public void start(Stage primaryStage) {
-        Label title = new Label("Meteo App");
-        title.setFont(Font.font("System", FontWeight.BOLD, 26));
-        title.setTextFill(Color.WHITE);
-
-        cityField = new TextField();
-        cityField.setPromptText("Roma, Milano, Tokyo...");
-        cityField.setStyle(
-            "-fx-font-size: 14px; -fx-padding: 10 14; -fx-background-radius: 22; " +
-            "-fx-border-radius: 22; -fx-background-color: white; -fx-prompt-text-fill: #999;");
-        cityField.setMaxWidth(300);
-
-        Button searchBtn = styledButton("CERCA");
-        searchBtn.setOnMouseEntered(e -> styleHover(searchBtn, "#2563eb", "rgba(37,99,235,0.5)"));
-        searchBtn.setOnMouseExited(e -> styleHover(searchBtn, "#3b82f6", "rgba(59,130,246,0.4)"));
-
-        HBox searchRow = new HBox(10, cityField, searchBtn);
-        searchRow.setAlignment(Pos.CENTER);
-
-        loadingLabel = new Label("Caricamento...");
-        loadingLabel.setFont(Font.font("System", 16));
-        loadingLabel.setTextFill(Color.rgb(255, 255, 255, 0.8));
-        loadingLabel.setVisible(false);
-
-        errorLabel = new Label();
-        errorLabel.setFont(Font.font("System", 13));
-        errorLabel.setTextFill(Color.rgb(255, 200, 200, 0.95));
-        errorLabel.setWrapText(true);
-        errorLabel.setAlignment(Pos.CENTER);
-        errorLabel.setMaxWidth(380);
-        errorLabel.setVisible(false);
-
-        contentArea = new VBox(16);
-        contentArea.setAlignment(Pos.TOP_CENTER);
-        VBox.setVgrow(contentArea, Priority.ALWAYS);
-
-        searchBtn.setOnAction(e -> {
-            String city = cityField.getText().trim();
-            if (city.isEmpty()) return;
-            errorLabel.setVisible(false);
-            contentArea.getChildren().clear();
-            loadingLabel.setVisible(true);
-            fetchWeather(city);
-        });
-        cityField.setOnAction(e -> searchBtn.fire());
-
-        VBox root = new VBox(16, title, searchRow, errorLabel, loadingLabel, contentArea);
-        root.setAlignment(Pos.TOP_CENTER);
-        root.setPadding(new Insets(30, 20, 30, 20));
-        root.setBackground(new Background(new BackgroundFill(
-            new LinearGradient(0, 0, 0, 1, true, null,
-                new Stop(0, Color.web("#0f2027")),
-                new Stop(0.5, Color.web("#203a43")),
-                new Stop(1, Color.web("#2c5364"))),
-            CornerRadii.EMPTY, Insets.EMPTY)));
-
-        primaryStage.setScene(new Scene(root, 700, 720));
-        primaryStage.setTitle("Meteo App");
-        primaryStage.show();
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new WeatherApp().createAndShow());
     }
 
-    // --- Fetch ---
+    private void createAndShow() {
+        frame = new JFrame("Meteo App");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(700, 720);
+        frame.setLocationRelativeTo(null);
+
+        JPanel root = new GradientPanel();
+        root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
+        root.setBorder(new EmptyBorder(30, 20, 30, 20));
+
+        JLabel title = new JLabel("Meteo App", SwingConstants.CENTER);
+        title.setFont(new Font("SansSerif", Font.BOLD, 26));
+        title.setForeground(Color.WHITE);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        searchRow.setOpaque(false);
+
+        cityField = new JTextField(18);
+        cityField.putClientProperty("JTextField.placeholderText", "Roma, Milano, Tokyo...");
+        cityField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        cityField.setPreferredSize(new Dimension(220, 38));
+
+        JButton searchBtn = styledButton("CERCA");
+        searchRow.add(cityField);
+        searchRow.add(searchBtn);
+
+        loadingLabel = new JLabel("Caricamento...", SwingConstants.CENTER);
+        loadingLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        loadingLabel.setForeground(new Color(255, 255, 255, 200));
+        loadingLabel.setVisible(false);
+        loadingLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        errorLabel = new JLabel("", SwingConstants.CENTER);
+        errorLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        errorLabel.setForeground(new Color(255, 200, 200));
+        errorLabel.setVisible(false);
+        errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+
+        searchBtn.addActionListener(e -> search());
+        cityField.addActionListener(e -> search());
+
+        root.add(title);
+        root.add(Box.createVerticalStrut(10));
+        root.add(searchRow);
+        root.add(Box.createVerticalStrut(8));
+        root.add(errorLabel);
+        root.add(loadingLabel);
+        root.add(Box.createVerticalStrut(8));
+        root.add(contentPanel);
+
+        frame.add(root);
+        frame.setVisible(true);
+    }
+
+    // --- Logic ---
+
+    private void search() {
+        String city = cityField.getText().trim();
+        if (city.isEmpty()) return;
+        errorLabel.setVisible(false);
+        contentPanel.removeAll();
+        contentPanel.revalidate();
+        contentPanel.repaint();
+        loadingLabel.setVisible(true);
+        fetchWeather(city);
+    }
 
     private void fetchWeather(String city) {
         String encoded = URLEncoder.encode(city, StandardCharsets.UTF_8);
         String geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" + encoded
                 + "&count=1&language=it&format=json";
 
-        Task<Void> task = new Task<>() {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
-            protected Void call() throws Exception {
+            protected Void doInBackground() throws Exception {
                 JsonNode first = geocode(geoUrl, city);
-                lastCity = first.get("name").asText();
+                String cityName = first.get("name").asText();
                 String country = first.has("country_code") ? first.get("country_code").asText().toUpperCase() : "";
                 lastLat = first.get("latitude").asDouble();
                 lastLon = first.get("longitude").asDouble();
@@ -132,131 +126,143 @@ public class WeatherApp extends Application {
                     lastLat, lastLon);
                 JsonNode w = fetchJson(weatherUrl).at("/current");
 
-                lastData = new WeatherData(lastCity, country,
+                lastData = new WeatherData(cityName, country,
                     w.get("temperature_2m").asDouble(),
                     w.get("apparent_temperature").asDouble(),
                     w.get("relative_humidity_2m").asInt(),
                     w.get("wind_speed_10m").asDouble(),
                     w.get("weather_code").asInt());
-                javafx.application.Platform.runLater(() -> showChoiceButtons());
                 return null;
             }
 
             @Override
-            protected void failed() {
+            protected void done() {
                 loadingLabel.setVisible(false);
-                errorLabel.setText(getException().getMessage());
-                errorLabel.setVisible(true);
+                try { get(); showChoiceButtons(); }
+                catch (Exception e) {
+                    errorLabel.setText(e.getCause().getMessage());
+                    errorLabel.setVisible(true);
+                }
             }
         };
-        new Thread(task).start();
+        worker.execute();
     }
 
     // --- Views ---
 
     private void showChoiceButtons() {
-        loadingLabel.setVisible(false);
-        contentArea.getChildren().clear();
+        contentPanel.removeAll();
 
-        Label cityLabel = new Label(lastData.city + (lastData.country().isEmpty() ? "" : ", " + lastData.country()));
-        cityLabel.setFont(Font.font("System", FontWeight.SEMI_BOLD, 15));
-        cityLabel.setTextFill(Color.rgb(255, 255, 255, 0.85));
+        JLabel cityLabel = new JLabel(lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country()), SwingConstants.CENTER);
+        cityLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
+        cityLabel.setForeground(new Color(255, 255, 255, 218));
+        cityLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        Button currentBtn = styledButton("Condizioni attuali");
-        currentBtn.setOnMouseEntered(e -> styleHover(currentBtn, "#059669", "rgba(5,150,105,0.5)"));
-        currentBtn.setOnMouseExited(e -> styleHover(currentBtn, "#059669", "rgba(5,150,105,0.4)"));
-        currentBtn.setOnAction(e -> showCurrent());
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        btnRow.setOpaque(false);
 
-        Button reportBtn = styledButton("Report giornaliero");
-        reportBtn.setOnMouseEntered(e -> styleHover(reportBtn, "#d97706", "rgba(217,119,6,0.5)"));
-        reportBtn.setOnMouseExited(e -> styleHover(reportBtn, "#d97706", "rgba(217,119,6,0.4)"));
-        reportBtn.setOnAction(e -> showReport());
+        JButton currentBtn = styledButton("Condizioni attuali");
+        currentBtn.addActionListener(e -> showCurrent());
+        JButton reportBtn = styledButton("Report giornaliero");
+        reportBtn.addActionListener(e -> showReport());
 
-        HBox btnRow = new HBox(14, currentBtn, reportBtn);
-        btnRow.setAlignment(Pos.CENTER);
+        btnRow.add(currentBtn);
+        btnRow.add(reportBtn);
 
-        contentArea.getChildren().addAll(cityLabel, btnRow);
+        contentPanel.add(cityLabel);
+        contentPanel.add(Box.createVerticalStrut(6));
+        contentPanel.add(btnRow);
+        refresh();
     }
 
     private void showCurrent() {
-        contentArea.getChildren().clear();
         showChoiceButtons();
 
-        VBox card = createResultCard();
-        Label tempLabel = new Label(String.format("%.1f°", lastData.temp()));
-        tempLabel.setFont(Font.font("System", FontWeight.THIN, 58));
-        tempLabel.setTextFill(Color.WHITE);
-        tempLabel.setAlignment(Pos.CENTER);
+        RoundedPanel card = new RoundedPanel(20);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(false);
+        card.setBackground(new Color(255, 255, 255, 30));
+        card.setBorder(new EmptyBorder(24, 28, 24, 28));
+        card.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.setMaximumSize(new Dimension(400, 400));
 
-        Label descLabel = new Label(weatherDescription(lastData.code()));
-        descLabel.setFont(Font.font("System", 16));
-        descLabel.setTextFill(Color.rgb(255, 255, 255, 0.9));
-        descLabel.setAlignment(Pos.CENTER);
+        JLabel tempLabel = new JLabel(String.format("%.1f°", lastData.temp()), SwingConstants.CENTER);
+        tempLabel.setFont(new Font("SansSerif", Font.PLAIN, 58));
+        tempLabel.setForeground(Color.WHITE);
+        tempLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        Label feelsLabel = new Label(String.format("Percepita %.1f°", lastData.feelsLike()));
-        feelsLabel.setFont(Font.font("System", 13));
-        feelsLabel.setTextFill(Color.rgb(255, 255, 255, 0.7));
-        feelsLabel.setAlignment(Pos.CENTER);
+        JLabel descLabel = new JLabel(weatherDescription(lastData.code()), SwingConstants.CENTER);
+        descLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        descLabel.setForeground(new Color(255, 255, 255, 230));
+        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        HBox details = new HBox(30);
-        details.setAlignment(Pos.CENTER);
-        details.getChildren().addAll(
-            detailBox("Umidità", lastData.humidity() + "%"),
-            detailBox("Vento", String.format("%.0f km/h", lastData.wind())));
+        JLabel feelsLabel = new JLabel(String.format("Percepita %.1f°", lastData.feelsLike()), SwingConstants.CENTER);
+        feelsLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        feelsLabel.setForeground(new Color(255, 255, 255, 179));
+        feelsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        Line sep = new Line(0, 0, 160, 0);
-        sep.setStroke(Color.rgb(255, 255, 255, 0.2));
-        sep.setStrokeWidth(1);
+        JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+        sep.setMaximumSize(new Dimension(160, 1));
+        sep.setForeground(new Color(255, 255, 255, 50));
 
-        card.getChildren().addAll(tempLabel, descLabel, feelsLabel, sep, details);
+        JPanel details = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0));
+        details.setOpaque(false);
+        details.add(detailBox("Umidità", lastData.humidity() + "%"));
+        details.add(detailBox("Vento", String.format("%.0f km/h", lastData.wind())));
 
-        StackPane cardContainer = new StackPane(card);
-        cardContainer.setAlignment(Pos.CENTER);
-        cardContainer.setMaxWidth(400);
+        card.add(tempLabel);
+        card.add(Box.createVerticalStrut(2));
+        card.add(descLabel);
+        card.add(Box.createVerticalStrut(2));
+        card.add(feelsLabel);
+        card.add(Box.createVerticalStrut(10));
+        card.add(sep);
+        card.add(Box.createVerticalStrut(10));
+        card.add(details);
 
-        FadeTransition ft = new FadeTransition(Duration.millis(400), card);
-        ft.setFromValue(0);
-        ft.setToValue(1);
-        ft.play();
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(card);
 
-        contentArea.getChildren().add(cardContainer);
+        contentPanel.add(wrapper);
+        refresh();
     }
 
     private void showReport() {
-        contentArea.getChildren().clear();
         showChoiceButtons();
 
-        Spinner<Integer> daySpinner = new Spinner<>(1, 16, 7);
-        daySpinner.setEditable(true);
-        daySpinner.setPrefWidth(80);
-        daySpinner.setStyle("-fx-font-size: 14px; -fx-background-radius: 10;");
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        controls.setOpaque(false);
 
-        Label dayLabel = new Label("Giorni:");
-        dayLabel.setTextFill(Color.rgb(255, 255, 255, 0.8));
+        JLabel dayLabel = new JLabel("Giorni:");
+        dayLabel.setForeground(new Color(255, 255, 255, 204));
 
-        Button generateBtn = styledButton("Genera");
-        generateBtn.setOnMouseEntered(e -> styleHover(generateBtn, "#2563eb", "rgba(37,99,235,0.5)"));
-        generateBtn.setOnMouseExited(e -> styleHover(generateBtn, "#3b82f6", "rgba(59,130,246,0.4)"));
+        JSpinner daySpinner = new JSpinner(new SpinnerNumberModel(7, 1, 16, 1));
+        daySpinner.setPreferredSize(new Dimension(70, 30));
 
-        HBox controls = new HBox(10, dayLabel, daySpinner, generateBtn);
-        controls.setAlignment(Pos.CENTER);
+        JButton generateBtn = styledButton("Genera");
+        JPanel chartContainer = new JPanel(new BorderLayout());
+        chartContainer.setOpaque(false);
 
-        VBox reportContent = new VBox(12);
-        reportContent.setAlignment(Pos.CENTER);
+        controls.add(dayLabel);
+        controls.add(daySpinner);
+        controls.add(generateBtn);
 
-        contentArea.getChildren().add(controls);
+        contentPanel.add(controls);
 
-        generateBtn.setOnAction(e -> {
-            reportContent.getChildren().clear();
-            loadingLabel.setVisible(true);
+        generateBtn.addActionListener(e -> {
+            chartContainer.removeAll();
+            chartContainer.revalidate();
+            chartContainer.repaint();
+
             String weatherUrl = String.format(
                 "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +
                 "&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max" +
-                "&timezone=auto&forecast_days=%d", lastLat, lastLon, daySpinner.getValue());
+                "&timezone=auto&forecast_days=%d", lastLat, lastLon, (int) daySpinner.getValue());
 
-            Task<Void> task = new Task<>() {
+            SwingWorker<List<DailyData>, Void> worker = new SwingWorker<>() {
                 @Override
-                protected Void call() throws Exception {
+                protected List<DailyData> doInBackground() throws Exception {
                     JsonNode daily = fetchJson(weatherUrl).get("daily");
                     List<DailyData> list = new ArrayList<>();
                     JsonNode dates = daily.get("time");
@@ -270,96 +276,51 @@ public class WeatherApp extends Application {
                             tMin.get(i).asDouble(),
                             wMax.get(i).asDouble()));
                     }
-                    javafx.application.Platform.runLater(() -> {
-                        loadingLabel.setVisible(false);
-                        showChart(reportContent, list, daySpinner.getValue());
-                    });
-                    return null;
+                    return list;
                 }
 
                 @Override
-                protected void failed() {
-                    loadingLabel.setVisible(false);
-                    errorLabel.setText(getException().getMessage());
-                    errorLabel.setVisible(true);
+                protected void done() {
+                    try {
+                        List<DailyData> data = get();
+                        int days = (int) daySpinner.getValue();
+                        chartContainer.add(buildChart(data, days), BorderLayout.CENTER);
+                        chartContainer.revalidate();
+                        chartContainer.repaint();
+                    } catch (Exception ex) {
+                        errorLabel.setText(ex.getCause().getMessage());
+                        errorLabel.setVisible(true);
+                    }
                 }
             };
-            new Thread(task).start();
+            worker.execute();
         });
 
-        contentArea.getChildren().add(reportContent);
+        contentPanel.add(chartContainer);
+        refresh();
     }
 
-    private void showChart(VBox container, List<DailyData> data, int days) {
-        container.getChildren().clear();
-
+    private JPanel buildChart(List<DailyData> data, int days) {
         double avgTMax = data.stream().mapToDouble(DailyData::tempMax).average().orElse(0);
         double avgTMin = data.stream().mapToDouble(DailyData::tempMin).average().orElse(0);
         double avgWind = data.stream().mapToDouble(DailyData::windMax).average().orElse(0);
 
-        HBox avgs = new HBox(20);
-        avgs.setAlignment(Pos.CENTER);
-        avgs.getChildren().addAll(
-            avgBox("T Max media", String.format("%.1f°C", avgTMax), "#ff6b6b"),
-            avgBox("T Min media", String.format("%.1f°C", avgTMin), "#4ecdc4"),
-            avgBox("Vento medio", String.format("%.0f km/h", avgWind), "#ffe66d"));
+        JPanel avgs = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        avgs.setOpaque(false);
+        avgs.setBorder(new EmptyBorder(10, 0, 6, 0));
+        avgs.add(avgBox("T Max media", String.format("%.1f°C", avgTMax), new Color(255, 107, 107)));
+        avgs.add(avgBox("T Min media", String.format("%.1f°C", avgTMin), new Color(78, 205, 196)));
+        avgs.add(avgBox("Vento medio", String.format("%.0f km/h", avgWind), new Color(255, 230, 109)));
 
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis();
-        yAxis.setLabel("Temperatura (°C)");
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(avgs, BorderLayout.NORTH);
+        wrapper.add(new ChartPanel(data), BorderLayout.CENTER);
 
-        LineChart<String, Number> chart = new LineChart<>(xAxis, yAxis);
-        chart.setTitle("Andamento " + days + " giorni");
-        chart.setStyle(
-            "-fx-background-color: transparent; " +
-            "-fx-text-fill: white; " +
-            "-fx-tick-label-fill: white;");
-        chart.setLegendVisible(true);
-        chart.setAnimated(false);
-        chart.setPrefHeight(220);
-        chart.setCreateSymbols(true);
-        chart.setMaxWidth(440);
-        chart.lookup(".chart-legend").setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
-
-        xAxis.setTickLabelRotation(45);
-
-        XYChart.Series<String, Number> maxSeries = new XYChart.Series<>();
-        maxSeries.setName("T Max");
-        XYChart.Series<String, Number> minSeries = new XYChart.Series<>();
-        minSeries.setName("T Min");
-        XYChart.Series<String, Number> windSeries = new XYChart.Series<>();
-        windSeries.setName("Vento (km/h)");
-
-        for (DailyData d : data) {
-            String label = d.date.substring(5);
-            maxSeries.getData().add(new XYChart.Data<>(label, d.tempMax));
-            minSeries.getData().add(new XYChart.Data<>(label, d.tempMin));
-            windSeries.getData().add(new XYChart.Data<>(label, d.windMax));
-        }
-
-        chart.getData().addAll(maxSeries, minSeries, windSeries);
-
-        container.getChildren().addAll(avgs, chart);
+        return wrapper;
     }
 
-    private VBox avgBox(String label, String value, String color) {
-        Label val = new Label(value);
-        val.setFont(Font.font("System", FontWeight.BOLD, 16));
-        val.setTextFill(Color.web(color));
-        val.setAlignment(Pos.CENTER);
-        Label lbl = new Label(label);
-        lbl.setFont(Font.font("System", 11));
-        lbl.setTextFill(Color.rgb(255, 255, 255, 0.7));
-        lbl.setAlignment(Pos.CENTER);
-        VBox box = new VBox(2, val, lbl);
-        box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(10, 14, 10, 14));
-        box.setBackground(new Background(new BackgroundFill(
-            Color.rgb(255, 255, 255, 0.06), new CornerRadii(12), Insets.EMPTY)));
-        return box;
-    }
-
-    // --- Shared helpers ---
+    // --- Helpers ---
 
     private JsonNode geocode(String geoUrl, String city) throws Exception {
         JsonNode geoData = fetchJson(geoUrl);
@@ -377,45 +338,63 @@ public class WeatherApp extends Application {
         return mapper.readTree(resp.body());
     }
 
-    private Button styledButton(String text) {
-        Button btn = new Button(text);
-        btn.setStyle(
-            "-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white; " +
-            "-fx-background-color: #3b82f6; -fx-background-radius: 22; -fx-padding: 10 22; " +
-            "-fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.4), 8, 0, 0, 4);");
+    private JButton styledButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("SansSerif", Font.BOLD, 13));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(new Color(59, 130, 246));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 22, 8, 22));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { btn.setBackground(new Color(37, 99, 235)); }
+            public void mouseExited(MouseEvent e) { btn.setBackground(new Color(59, 130, 246)); }
+        });
         return btn;
     }
 
-    private void styleHover(Button btn, String color, String shadow) {
-        btn.setStyle(
-            "-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white; " +
-            "-fx-background-color: " + color + "; -fx-background-radius: 22; -fx-padding: 10 22; " +
-            "-fx-cursor: hand; -fx-effect: dropshadow(gaussian, " + shadow + ", 12, 0, 0, 6);");
-    }
-
-    private VBox createResultCard() {
-        VBox card = new VBox(12);
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(24, 28, 24, 28));
-        card.setBackground(new Background(new BackgroundFill(
-            Color.rgb(255, 255, 255, 0.12), new CornerRadii(20), Insets.EMPTY)));
-        card.setMaxWidth(400);
-        card.setEffect(new DropShadow(20, Color.rgb(0, 0, 0, 0.3)));
-        return card;
-    }
-
-    private VBox detailBox(String label, String value) {
-        Label val = new Label(value);
-        val.setFont(Font.font("System", FontWeight.BOLD, 18));
-        val.setTextFill(Color.WHITE);
-        val.setAlignment(Pos.CENTER);
-        Label lbl = new Label(label);
-        lbl.setFont(Font.font("System", 12));
-        lbl.setTextFill(Color.rgb(255, 255, 255, 0.7));
-        lbl.setAlignment(Pos.CENTER);
-        VBox box = new VBox(2, val, lbl);
-        box.setAlignment(Pos.CENTER);
+    private JPanel detailBox(String label, String value) {
+        JPanel box = new JPanel();
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setOpaque(false);
+        JLabel val = new JLabel(value, SwingConstants.CENTER);
+        val.setFont(new Font("SansSerif", Font.BOLD, 18));
+        val.setForeground(Color.WHITE);
+        val.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel lbl = new JLabel(label, SwingConstants.CENTER);
+        lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lbl.setForeground(new Color(255, 255, 255, 179));
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        box.add(val);
+        box.add(lbl);
         return box;
+    }
+
+    private JPanel avgBox(String label, String value, Color color) {
+        JPanel box = new JPanel();
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setOpaque(false);
+        box.setBackground(new Color(255, 255, 255, 15));
+        box.setBorder(new EmptyBorder(10, 14, 10, 14));
+        JLabel val = new JLabel(value, SwingConstants.CENTER);
+        val.setFont(new Font("SansSerif", Font.BOLD, 16));
+        val.setForeground(color);
+        val.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel lbl = new JLabel(label, SwingConstants.CENTER);
+        lbl.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        lbl.setForeground(new Color(255, 255, 255, 179));
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        box.add(val);
+        box.add(lbl);
+        return box;
+    }
+
+    private void refresh() {
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private String weatherDescription(int code) {
@@ -430,7 +409,132 @@ public class WeatherApp extends Application {
         return "\u26A1 Temporale";
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    // --- Custom components ---
+
+    static class GradientPanel extends JPanel {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            int w = getWidth(), h = getHeight();
+            GradientPaint gp = new GradientPaint(0, 0, new Color(0x0f2027),
+                0, h, new Color(0x2c5364));
+            g2.setPaint(gp);
+            g2.fillRect(0, 0, w, h);
+        }
+    }
+
+    static class RoundedPanel extends JPanel {
+        private final int radius;
+        public RoundedPanel(int radius) { this.radius = radius; setOpaque(false); }
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+            g2.dispose();
+        }
+    }
+
+    static class ChartPanel extends JPanel {
+        private final List<DailyData> data;
+        private static final Color[] COLORS = {
+            new Color(255, 107, 107),
+            new Color(78, 205, 196),
+            new Color(255, 230, 109)
+        };
+        private static final String[] NAMES = {"T Max", "T Min", "Vento"};
+
+        ChartPanel(List<DailyData> data) {
+            this.data = data;
+            setOpaque(false);
+            setPreferredSize(new Dimension(440, 240));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (data.isEmpty()) return;
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            int padL = 50, padR = 20, padT = 20, padB = 40;
+            int w = getWidth(), h = getHeight();
+            int cw = w - padL - padR, ch = h - padT - padB;
+
+            if (cw < 10 || ch < 10) { g2.dispose(); return; }
+
+            double min = Double.MAX_VALUE, max = -Double.MAX_VALUE;
+            for (DailyData d : data) {
+                min = Math.min(min, Math.min(d.tempMin(), Math.min(d.tempMax(), d.windMax())));
+                max = Math.max(max, Math.max(d.tempMax(), Math.max(d.tempMin(), d.windMax())));
+            }
+            double range = max - min;
+            if (range < 1) range = 1;
+
+            int n = data.size();
+            double[][] vals = new double[3][n];
+            for (int i = 0; i < n; i++) {
+                vals[0][i] = data.get(i).tempMax();
+                vals[1][i] = data.get(i).tempMin();
+                vals[2][i] = data.get(i).windMax();
+            }
+
+            // Grid lines & axis labels
+            g2.setColor(new Color(255, 255, 255, 30));
+            int ticks = 4;
+            for (int t = 0; t <= ticks; t++) {
+                int y = padT + ch * t / ticks;
+                g2.drawLine(padL, y, padL + cw, y);
+                String lbl = String.format("%.0f", max - range * t / ticks);
+                g2.setColor(new Color(255, 255, 255, 150));
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
+                g2.drawString(lbl, 2, y + 4);
+                g2.setColor(new Color(255, 255, 255, 30));
+            }
+
+            // X labels
+            g2.setColor(new Color(255, 255, 255, 150));
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            for (int i = 0; i < n; i++) {
+                int x = padL + cw * i / Math.max(n - 1, 1);
+                g2.drawString(data.get(i).date().substring(5), x - 12, h - padB + 16);
+            }
+
+            // Series
+            for (int s = 0; s < 3; s++) {
+                g2.setColor(COLORS[s]);
+                g2.setStroke(new BasicStroke(2.5f));
+                int[] px = new int[n], py = new int[n];
+                for (int i = 0; i < n; i++) {
+                    px[i] = padL + cw * i / Math.max(n - 1, 1);
+                    py[i] = padT + (int) ((max - vals[s][i]) / range * ch);
+                }
+                for (int i = 1; i < n; i++) {
+                    g2.drawLine(px[i - 1], py[i - 1], px[i], py[i]);
+                }
+                // Dots
+                g2.setStroke(new BasicStroke(1));
+                for (int i = 0; i < n; i++) {
+                    g2.fillOval(px[i] - 3, py[i] - 3, 6, 6);
+                }
+            }
+
+            // Legend
+            int lx = padL + cw - 160, ly = padT + 4;
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            for (int s = 0; s < 3; s++) {
+                g2.setColor(new Color(255, 255, 255, 30));
+                g2.fillRect(lx, ly + s * 18, 50, 16);
+                g2.setColor(COLORS[s]);
+                g2.fillRect(lx + 2, ly + s * 18 + 3, 10, 10);
+                g2.setColor(new Color(255, 255, 255, 200));
+                g2.drawString(NAMES[s], lx + 16, ly + s * 18 + 12);
+            }
+
+            g2.dispose();
+        }
     }
 }
