@@ -19,6 +19,7 @@
         #container {
             width: 700px;
             height: 720px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.5); /* Opzionale: aggiunge un'ombra per far risaltare l'app */
         }
     </style>
 </head>
@@ -27,13 +28,16 @@
     <div id="container"></div>
 
     <script>
-        // Inizializza l'ambiente runtime di CheerpJ
-        cheerpjInit().then(function() {
-            // Esegue il jar indicando la classe Main e il contenitore HTML
-            cheerpjCreateDisplay(700, 720, document.getElementById("container"));
-            // Sostituisci con il package esatto della classe che contiene il tuo main(String[] args)
-            cheerpjRunMain("com.example.weather", "/app.jar");
-        });
+        (async function () {
+            // 1. Inizializza l'ambiente CheerpJ 3.0
+            await cheerpjInit();
+            
+            // 2. Vincola la visualizzazione dell'interfaccia Swing all'interno del tuo div #container
+            cheerpjCreateDisplay(-1, -1, document.getElementById("container"));
+            
+            // 3. Esegui l'applicazione passando il percorso relativo del file JAR
+            await cheerpjRunJar("./app.jar");
+        })();
     </script>
 </body>
 </html>
