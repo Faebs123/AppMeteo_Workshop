@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Meteo App - Browser Version</title>
+    <script src="https://cjrtnc.leaningtech.com/3.0/loader.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #202020;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Questo contenitore ospiterà il tuo JFrame Swing */
+        #container {
+            width: 700px;
+            height: 720px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container"></div>
+
+    <script>
+        // Inizializza l'ambiente runtime di CheerpJ
+        cheerpjInit().then(function() {
+            // Esegue il jar indicando la classe Main e il contenitore HTML
+            cheerpjCreateDisplay(700, 720, document.getElementById("container"));
+            // Sostituisci con il package esatto della classe che contiene il tuo main(String[] args)
+            cheerpjRunMain("com.example.weather.WeatherApp", "/app.jar");
+        });
+    </script>
+</body>
+</html>
