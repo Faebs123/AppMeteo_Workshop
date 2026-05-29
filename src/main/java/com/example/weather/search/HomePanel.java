@@ -1,4 +1,4 @@
-package com.example.weather.search.view;
+package com.example.weather.search;
 
 import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.StyledButton;
@@ -7,11 +7,11 @@ import javax.swing.*;
 import java.awt.*;
 
 public class HomePanel extends JPanel {
-    public HomePanel(String cityLabel, Runnable onCurrent, Runnable onReport) {
+    public HomePanel(String cityLabel, Runnable onCurrent, Runnable onReport, Labels labels) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
 
-        JLabel label = Labels.heading(cityLabel);
+        JLabel label = labels.heading(cityLabel);
 
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
         btnRow.setOpaque(false);

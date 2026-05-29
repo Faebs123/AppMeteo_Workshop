@@ -1,14 +1,14 @@
-package com.example.weather.app.view;
+package com.example.weather.app;
 
-import com.example.weather.app.controller.WeatherController;
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.widget.GradientPanel;
 import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.StyledButton;
-import com.example.weather.current.view.CurrentPanel;
-import com.example.weather.forecast.view.ForecastPanel;
-import com.example.weather.search.view.HomePanel;
+import com.example.weather.shared.widget.Theme;
+import com.example.weather.current.CurrentPanel;
+import com.example.weather.forecast.ForecastPanel;
+import com.example.weather.search.HomePanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -20,20 +20,24 @@ public class MainFrame extends JFrame {
     private final JLabel loadingLabel;
     private final JLabel errorLabel;
     private final JTextField cityField;
+    private final Theme theme;
+    private final Labels labels;
     private WeatherController controller;
     private ForecastPanel currentForecastPanel;
 
-    public MainFrame() {
+    public MainFrame(Labels labels, Theme theme) {
         super("Meteo App");
+        this.labels = labels;
+        this.theme = theme;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(700, 720);
         setLocationRelativeTo(null);
 
-        JPanel root = new GradientPanel();
+        JPanel root = new GradientPanel(theme);
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
         root.setBorder(new EmptyBorder(24, 20, 20, 20));
 
-        JLabel title = Labels.title("Meteo App");
+        JLabel title = labels.title("Meteo App");
 
         JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         searchRow.setOpaque(false);
@@ -65,12 +69,13 @@ public class MainFrame extends JFrame {
         searchRow.add(cityField);
         searchRow.add(searchBtn);
 
-        loadingLabel = Labels.loading("Caricamento...");
+        loadingLabel = labels.loading("Caricamento...");
         loadingLabel.setVisible(false);
 
         javax.swing.Timer pulse = new javax.swing.Timer(600, e -> {
+            Color tp = theme.textPrimary();
             float a = loadingLabel.getForeground().getAlpha() == 200 ? 100 : 200;
-            loadingLabel.setForeground(new Color(255, 255, 255, (int) a));
+            loadingLabel.setForeground(new Color(tp.getRed(), tp.getGreen(), tp.getBlue(), (int) a));
         });
         pulse.setRepeats(true);
         loadingLabel.addHierarchyListener(e -> {
@@ -80,7 +85,7 @@ public class MainFrame extends JFrame {
             }
         });
 
-        errorLabel = Labels.error("");
+        errorLabel = labels.error("");
         errorLabel.setVisible(false);
 
         contentPanel = new JPanel();
@@ -129,27 +134,28 @@ public class MainFrame extends JFrame {
         contentPanel.repaint();
     }
 
-    public void showHome(String cityLabel) {
+    public void showHome(String cityLabel, Labels labels) {
         clearContent();
         contentPanel.add(new HomePanel(cityLabel,
             () -> controller.showCurrent(),
-            () -> controller.showForecast()));
+            () -> controller.showForecast(),
+            labels));
         refresh();
     }
 
-    public void showCurrentPanel(String cityLabel, WeatherData data, String description) {
+    public void showCurrentPanel(String cityLabel, WeatherData data, String description, Labels labels, Theme theme) {
         clearContent();
-        contentPanel.add(backHeader(cityLabel, () -> controller.showHome()));
+        contentPanel.add(backHeader(cityLabel, () -> controller.showHome(), labels));
         contentPanel.add(Box.createVerticalStrut(6));
-        contentPanel.add(new CurrentPanel(data, description));
+        contentPanel.add(new CurrentPanel(data, description, labels, theme));
         refresh();
     }
 
-    public void showForecastPanel(String cityLabel) {
+    public void showForecastPanel(String cityLabel, Labels labels, Theme theme) {
         clearContent();
-        contentPanel.add(backHeader(cityLabel, () -> controller.showHome()));
+        contentPanel.add(backHeader(cityLabel, () -> controller.showHome(), labels));
         contentPanel.add(Box.createVerticalStrut(4));
-        currentForecastPanel = new ForecastPanel(days -> controller.generateReport(days));
+        currentForecastPanel = new ForecastPanel(days -> controller.generateReport(days), labels, theme);
         contentPanel.add(currentForecastPanel);
         refresh();
     }
@@ -165,7 +171,7 @@ public class MainFrame extends JFrame {
         contentPanel.repaint();
     }
 
-    private JPanel backHeader(String cityLabel, Runnable onBack) {
+    private JPanel backHeader(String cityLabel, Runnable onBack, Labels labels) {
         JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         header.setOpaque(false);
         header.setMaximumSize(new Dimension(700, 40));
@@ -186,7 +192,7 @@ public class MainFrame extends JFrame {
         });
         backBtn.addActionListener(e -> onBack.run());
 
-        JLabel label = Labels.subheading(cityLabel);
+        JLabel label = labels.subheading(cityLabel);
 
         header.add(backBtn);
         header.add(label);

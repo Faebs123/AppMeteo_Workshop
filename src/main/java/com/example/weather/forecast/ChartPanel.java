@@ -1,4 +1,4 @@
-package com.example.weather.shared.widget;
+package com.example.weather.forecast;
 
 import com.example.weather.shared.model.DailyData;
 

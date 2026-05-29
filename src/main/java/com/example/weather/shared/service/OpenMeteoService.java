@@ -43,7 +43,7 @@ public class OpenMeteoService extends WeatherService {
     public WeatherData fetchCurrent(GeocodeResult loc) throws Exception {
         String url = String.format(
             "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +
-            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
+            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day",
             loc.lat(), loc.lon());
         JsonNode w = fetchJson(url).at("/current");
         return new WeatherData(loc.cityName(), loc.country(),
@@ -51,7 +51,8 @@ public class OpenMeteoService extends WeatherService {
             w.get("apparent_temperature").asDouble(),
             w.get("relative_humidity_2m").asInt(),
             w.get("wind_speed_10m").asDouble(),
-            w.get("weather_code").asInt());
+            w.get("weather_code").asInt(),
+            w.get("is_day").asInt() == 1);
     }
 
     @Override

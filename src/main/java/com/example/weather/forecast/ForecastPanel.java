@@ -1,9 +1,9 @@
-package com.example.weather.forecast.view;
+package com.example.weather.forecast;
 
 import com.example.weather.shared.model.DailyData;
-import com.example.weather.shared.widget.ChartPanel;
 import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.StyledButton;
+import com.example.weather.shared.widget.Theme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,15 +14,18 @@ import java.util.function.Consumer;
 public class ForecastPanel extends JPanel {
     private final JSpinner daySpinner;
     private final JPanel chartContainer;
+    private final Labels labels;
+    private final Theme theme;
 
-    public ForecastPanel(Consumer<Integer> onGenerate) {
+    public ForecastPanel(Consumer<Integer> onGenerate, Labels labels, Theme theme) {
+        this.labels = labels;
+        this.theme = theme;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         controls.setOpaque(false);
-        JLabel dayLabel = new JLabel("Giorni:");
-        dayLabel.setForeground(new Color(255, 255, 255, 204));
+        JLabel dayLabel = labels.small("Giorni:");
         daySpinner = new JSpinner(new SpinnerNumberModel(7, 1, 16, 1));
         daySpinner.setPreferredSize(new Dimension(70, 30));
 
@@ -76,7 +79,7 @@ public class ForecastPanel extends JPanel {
                 }
             };
             dot.setOpaque(false);
-            JLabel lbl = Labels.small(ni);
+            JLabel lbl = labels.small(ni);
             item.add(dot);
             item.add(lbl);
             legend.add(item);
@@ -99,8 +102,8 @@ public class ForecastPanel extends JPanel {
         box.setOpaque(false);
         box.setBackground(new Color(255, 255, 255, 30));
         box.setBorder(new EmptyBorder(10, 14, 10, 14));
-        JLabel val = Labels.value(value, color);
-        JLabel lbl = Labels.caption(label);
+        JLabel val = labels.value(value, color);
+        JLabel lbl = labels.small(label);
         box.add(val);
         box.add(lbl);
         return box;

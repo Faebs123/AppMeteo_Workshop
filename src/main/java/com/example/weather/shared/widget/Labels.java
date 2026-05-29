@@ -3,65 +3,69 @@ package com.example.weather.shared.widget;
 import javax.swing.*;
 import java.awt.*;
 
-public final class Labels {
-    private Labels() {}
+public class Labels {
+    private final Theme theme;
 
-    public static JLabel hero(String text) {
+    public Labels(Theme theme) {
+        this.theme = theme;
+    }
+
+    public JLabel hero(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.PLAIN, 58));
-        label.setForeground(Color.WHITE);
+        label.setForeground(theme.textPrimary());
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel title(String text) {
+    public JLabel title(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.BOLD, 26));
-        label.setForeground(Color.WHITE);
+        label.setForeground(theme.textPrimary());
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel heading(String text) {
+    public JLabel heading(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.BOLD, 15));
-        label.setForeground(new Color(255, 255, 255, 218));
+        label.setForeground(theme.textSecondary());
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel subheading(String text) {
+    public JLabel subheading(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("SansSerif", Font.BOLD, 14));
-        label.setForeground(new Color(255, 255, 255, 220));
+        label.setForeground(theme.textSecondary());
         return label;
     }
 
-    public static JLabel body(String text) {
+    public JLabel body(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        label.setForeground(new Color(255, 255, 255, 230));
+        label.setForeground(new Color(theme.textPrimary().getRed(), theme.textPrimary().getGreen(), theme.textPrimary().getBlue(), 230));
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel caption(String text) {
+    public JLabel caption(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        label.setForeground(new Color(255, 255, 255, 179));
+        label.setForeground(theme.textMuted());
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel value(String text) {
+    public JLabel value(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.BOLD, 18));
-        label.setForeground(Color.WHITE);
+        label.setForeground(theme.textPrimary());
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel value(String text, Color color) {
+    public JLabel value(String text, Color color) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.BOLD, 16));
         label.setForeground(color);
@@ -69,25 +73,25 @@ public final class Labels {
         return label;
     }
 
-    public static JLabel small(String text) {
+    public JLabel small(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        label.setForeground(new Color(255, 255, 255, 210));
+        label.setForeground(theme.textMuted());
         return label;
     }
 
-    public static JLabel loading(String text) {
+    public JLabel loading(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        label.setForeground(new Color(255, 255, 255, 200));
+        label.setForeground(new Color(theme.textPrimary().getRed(), theme.textPrimary().getGreen(), theme.textPrimary().getBlue(), 200));
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }
 
-    public static JLabel error(String text) {
+    public JLabel error(String text) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        label.setForeground(new Color(255, 200, 200));
+        label.setForeground(theme.errorText());
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
     }

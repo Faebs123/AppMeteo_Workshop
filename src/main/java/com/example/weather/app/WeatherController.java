@@ -1,10 +1,12 @@
-package com.example.weather.app.controller;
+package com.example.weather.app;
 
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.model.GeocodeResult;
 import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.service.WeatherService;
-import com.example.weather.app.view.MainFrame;
+import com.example.weather.shared.widget.Labels;
+import com.example.weather.shared.widget.Theme;
+import com.example.weather.app.MainFrame;
 
 import javax.swing.*;
 import java.util.List;
@@ -53,19 +55,24 @@ public class WeatherController {
 
     public void showHome() {
         String label = lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
-        view.showHome(label);
+        Theme theme = lastData.day() ? Theme.DAY : Theme.NIGHT;
+        Labels labels = new Labels(theme);
+        view.showHome(label, labels);
     }
 
     public void showCurrent() {
+        String label = lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
         String desc = weatherDescription(lastData.code());
-        view.showCurrentPanel(
-            lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country()),
-            lastData, desc);
+        Theme theme = lastData.day() ? Theme.DAY : Theme.NIGHT;
+        Labels labels = new Labels(theme);
+        view.showCurrentPanel(label, lastData, desc, labels, theme);
     }
 
     public void showForecast() {
         String label = lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
-        view.showForecastPanel(label);
+        Theme theme = lastData.day() ? Theme.DAY : Theme.NIGHT;
+        Labels labels = new Labels(theme);
+        view.showForecastPanel(label, labels, theme);
     }
 
     public void generateReport(int days) {
