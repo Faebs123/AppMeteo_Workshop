@@ -6,9 +6,12 @@ import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.service.WeatherService;
 import com.example.weather.shared.widget.Labels;
 import com.example.weather.shared.widget.Theme;
+import com.example.weather.shared.widget.ThemeEngine;
 import com.example.weather.app.MainFrame;
 
 import javax.swing.*;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 public class WeatherController {
@@ -17,6 +20,7 @@ public class WeatherController {
     private WeatherData lastData;
     private double lastLat;
     private double lastLon;
+    private String timezone;
 
     public WeatherController(WeatherService service, MainFrame view) {
         this.service = service;
@@ -35,6 +39,7 @@ public class WeatherController {
                 lastData = service.fetchCurrent(loc);
                 lastLat = loc.lat();
                 lastLon = loc.lon();
+                timezone = loc.timezone();
                 return null;
             }
 
@@ -53,26 +58,40 @@ public class WeatherController {
         worker.execute();
     }
 
+    private Theme themeForTimezone() {
+        String tz = timezone != null ? timezone : "UTC";
+        try {
+            int hour = ZonedDateTime.now(ZoneId.of(tz)).getHour();
+            return ThemeEngine.forHour(hour);
+        } catch (Exception e) {
+            return lastData != null && lastData.day() ? Theme.DAY : Theme.NIGHT;
+        }
+    }
+
     public void showHome() {
-        String label = lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
-        Theme theme = lastData.day() ? Theme.DAY : Theme.NIGHT;
+        String label = cityLabel();
+        Theme theme = themeForTimezone();
         Labels labels = new Labels(theme);
-        view.showHome(label, labels);
+        view.showHome(label, labels, theme);
     }
 
     public void showCurrent() {
-        String label = lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
+        String label = cityLabel();
         String desc = weatherDescription(lastData.code());
-        Theme theme = lastData.day() ? Theme.DAY : Theme.NIGHT;
+        Theme theme = themeForTimezone();
         Labels labels = new Labels(theme);
         view.showCurrentPanel(label, lastData, desc, labels, theme);
     }
 
     public void showForecast() {
-        String label = lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
-        Theme theme = lastData.day() ? Theme.DAY : Theme.NIGHT;
+        String label = cityLabel();
+        Theme theme = themeForTimezone();
         Labels labels = new Labels(theme);
         view.showForecastPanel(label, labels, theme);
+    }
+
+    private String cityLabel() {
+        return lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
     }
 
     public void generateReport(int days) {

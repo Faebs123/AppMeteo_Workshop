@@ -22,6 +22,9 @@ public class MainFrame extends JFrame {
     private final JTextField cityField;
     private final Theme theme;
     private final Labels labels;
+    private final GradientPanel root;
+    private final JLabel title;
+    private final JPanel titlePanel;
     private WeatherController controller;
     private ForecastPanel currentForecastPanel;
 
@@ -33,11 +36,18 @@ public class MainFrame extends JFrame {
         setSize(700, 720);
         setLocationRelativeTo(null);
 
-        JPanel root = new GradientPanel(theme);
+        root = new GradientPanel(theme);
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
         root.setBorder(new EmptyBorder(24, 20, 20, 20));
 
-        JLabel title = labels.title("Meteo App");
+        title = labels.title("Meteo App");
+
+        titlePanel = new com.example.weather.shared.widget.RoundedPanel(16);
+        titlePanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        titlePanel.setBackground(theme.cardBackground());
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
+        titlePanel.add(title);
+        titlePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         searchRow.setOpaque(false);
@@ -92,7 +102,7 @@ public class MainFrame extends JFrame {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
 
-        root.add(title);
+        root.add(titlePanel);
         root.add(Box.createVerticalStrut(14));
         root.add(searchRow);
         root.add(Box.createVerticalStrut(6));
@@ -134,8 +144,15 @@ public class MainFrame extends JFrame {
         contentPanel.repaint();
     }
 
-    public void showHome(String cityLabel, Labels labels) {
+    private void updateTheme(Theme theme) {
+        root.applyTheme(theme);
+        title.setForeground(theme.textPrimary());
+        titlePanel.setBackground(theme.cardBackground());
+    }
+
+    public void showHome(String cityLabel, Labels labels, Theme theme) {
         clearContent();
+        updateTheme(theme);
         contentPanel.add(new HomePanel(cityLabel,
             () -> controller.showCurrent(),
             () -> controller.showForecast(),
@@ -145,6 +162,7 @@ public class MainFrame extends JFrame {
 
     public void showCurrentPanel(String cityLabel, WeatherData data, String description, Labels labels, Theme theme) {
         clearContent();
+        updateTheme(theme);
         contentPanel.add(backHeader(cityLabel, () -> controller.showHome(), labels));
         contentPanel.add(Box.createVerticalStrut(6));
         contentPanel.add(new CurrentPanel(data, description, labels, theme));
@@ -153,6 +171,7 @@ public class MainFrame extends JFrame {
 
     public void showForecastPanel(String cityLabel, Labels labels, Theme theme) {
         clearContent();
+        updateTheme(theme);
         contentPanel.add(backHeader(cityLabel, () -> controller.showHome(), labels));
         contentPanel.add(Box.createVerticalStrut(4));
         currentForecastPanel = new ForecastPanel(days -> controller.generateReport(days), labels, theme);

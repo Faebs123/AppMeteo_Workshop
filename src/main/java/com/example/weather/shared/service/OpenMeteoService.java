@@ -32,11 +32,13 @@ public class OpenMeteoService extends WeatherService {
         if (results == null || !results.isArray() || results.isEmpty())
             throw new RuntimeException("Localit\u00e0 \"" + city + "\" non trovata.");
         JsonNode first = results.get(0);
+        String tz = first.has("timezone") ? first.get("timezone").asText() : "UTC";
         return new GeocodeResult(
             first.get("name").asText(),
             first.has("country_code") ? first.get("country_code").asText().toUpperCase() : "",
             first.get("latitude").asDouble(),
-            first.get("longitude").asDouble());
+            first.get("longitude").asDouble(),
+            tz);
     }
 
     @Override
