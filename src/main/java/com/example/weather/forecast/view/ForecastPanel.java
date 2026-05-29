@@ -20,11 +20,11 @@ public class ForecastPanel extends JPanel {
     private final Labels labels;
     private final Theme theme;
     private ChartPanel chart;
-    private final Consumer<Integer> onGenerate;
+    private final Consumer<String[]> onGenerate;
     private final JSpinner startSpinner;
     private final JSpinner endSpinner;
 
-    public ForecastPanel(Consumer<Integer> onGenerate, Labels labels, Theme theme) {
+    public ForecastPanel(Consumer<String[]> onGenerate, Labels labels, Theme theme) {
         this.onGenerate = onGenerate;
         this.labels = labels;
         this.theme = theme;
@@ -86,10 +86,10 @@ public class ForecastPanel extends JPanel {
             startSpinner.setValue(start);
             endSpinner.setValue(end);
         }
-        long diffMs = end.getTime() - start.getTime();
-        int days = (int) (TimeUnit.DAYS.convert(diffMs, TimeUnit.MILLISECONDS)) + 1;
-        if (days < 1) days = 1;
-        onGenerate.accept(days);
+        SimpleDateFormat isoFmt = new SimpleDateFormat("yyyy-MM-dd");
+        String startIso = isoFmt.format(start);
+        String endIso = isoFmt.format(end);
+        onGenerate.accept(new String[]{startIso, endIso});
     }
 
     public void setChart(List<DailyData> data) {

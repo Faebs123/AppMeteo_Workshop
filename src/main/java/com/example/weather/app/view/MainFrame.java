@@ -193,7 +193,7 @@ public class MainFrame extends JFrame {
         updateTheme(theme);
         contentPanel.add(backHeader(cityLabel, () -> controller.showHome(), labels));
         contentPanel.add(Box.createVerticalStrut(4));
-        currentForecastPanel = new ForecastPanel(days -> controller.generateReport(days), labels, theme);
+        currentForecastPanel = new ForecastPanel(dates -> controller.generateReport(dates[0], dates[1]), labels, theme);
         contentPanel.add(currentForecastPanel);
         refresh();
     }

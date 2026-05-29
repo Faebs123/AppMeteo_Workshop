@@ -58,11 +58,11 @@ public class OpenMeteoService extends WeatherService {
     }
 
     @Override
-    public List<DailyData> fetchForecast(double lat, double lon, int days) throws Exception {
+    public List<DailyData> fetchForecast(double lat, double lon, String startDate, String endDate) throws Exception {
         String url = String.format(
             "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +
             "&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max" +
-            "&timezone=auto&forecast_days=%d", lat, lon, days);
+            "&timezone=auto&start_date=%s&end_date=%s", lat, lon, startDate, endDate);
         JsonNode daily = fetchJson(url).get("daily");
         List<DailyData> list = new ArrayList<>();
         JsonNode dates = daily.get("time");

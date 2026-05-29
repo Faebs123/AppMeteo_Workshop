@@ -98,11 +98,11 @@ public class WeatherController {
         view.showError("Geolocalizzazione non disponibile. Digita il nome della citt\u00e0.");
     }
 
-    public void generateReport(int days) {
+    public void generateReport(String startDate, String endDate) {
         SwingWorker<List<DailyData>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<DailyData> doInBackground() throws Exception {
-                return service.fetchForecast(lastLat, lastLon, days);
+                return service.fetchForecast(lastLat, lastLon, startDate, endDate);
             }
 
             @Override
