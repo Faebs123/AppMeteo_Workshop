@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Meteo App - Browser Version</title>
-    <script src="https://cjrtnc.leaningtech.com/3.0/loader.js"></script>
+    <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
     <style>
         html, body {
             margin: 0;
@@ -29,14 +29,14 @@
 
     <script>
         (async function () {
-            // 1. Inizializza l'ambiente CheerpJ 3.0
+            // 1. Inizializza l'ambiente CheerpJ 4.3
             await cheerpjInit();
             
             // 2. Vincola la visualizzazione dell'interfaccia Swing all'interno del tuo div #container
             cheerpjCreateDisplay(-1, -1, document.getElementById("container"));
             
             // 3. Esegui l'applicazione passando il percorso relativo del file JAR
-            await cheerpjRunJar("./app.jar");
+            await cheerpjRunJar("/app/app.jar");
         })();
     </script>
 </body>
