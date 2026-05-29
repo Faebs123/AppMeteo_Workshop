@@ -83,6 +83,8 @@ public class ForecastPanel extends JPanel {
             Date tmp = start;
             start = end;
             end = tmp;
+            startSpinner.setValue(start);
+            endSpinner.setValue(end);
         }
         long diffMs = end.getTime() - start.getTime();
         int days = (int) (TimeUnit.DAYS.convert(diffMs, TimeUnit.MILLISECONDS)) + 1;
@@ -92,6 +94,62 @@ public class ForecastPanel extends JPanel {
 
     public void setChart(List<DailyData> data) {
         chartContainer.removeAll();
+
+        if (data.size() == 1) {
+            DailyData d = data.get(0);
+            String formatted = d.date();
+
+            JPanel single = new JPanel();
+            single.setLayout(new BoxLayout(single, BoxLayout.Y_AXIS));
+            single.setOpaque(false);
+            single.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JLabel dateLabel = new JLabel(formatted, SwingConstants.CENTER);
+            dateLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+            dateLabel.setForeground(theme.textSecondary());
+            dateLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            RoundedPanel card = new RoundedPanel(20);
+            card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+            card.setBackground(new Color(255, 255, 255, 25));
+            card.setBorder(BorderFactory.createEmptyBorder(28, 36, 28, 36));
+            card.setAlignmentX(Component.CENTER_ALIGNMENT);
+            card.setMaximumSize(new Dimension(380, 260));
+
+            JLabel tMax = new JLabel(String.format("T Max: %.1f\u00b0C", d.tempMax()), SwingConstants.CENTER);
+            tMax.setFont(new Font("SansSerif", Font.BOLD, 28));
+            tMax.setForeground(new Color(255, 107, 107));
+            tMax.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JLabel tMin = new JLabel(String.format("T Min: %.1f\u00b0C", d.tempMin()), SwingConstants.CENTER);
+            tMin.setFont(new Font("SansSerif", Font.BOLD, 28));
+            tMin.setForeground(new Color(78, 205, 196));
+            tMin.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JLabel wind = new JLabel(String.format("Vento: %.0f km/h", d.windMax()), SwingConstants.CENTER);
+            wind.setFont(new Font("SansSerif", Font.BOLD, 20));
+            wind.setForeground(new Color(255, 230, 109));
+            wind.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            card.add(tMax);
+            card.add(Box.createVerticalStrut(8));
+            card.add(tMin);
+            card.add(Box.createVerticalStrut(8));
+            card.add(wind);
+
+            JPanel wrapper = new JPanel(new GridBagLayout());
+            wrapper.setOpaque(false);
+            wrapper.add(card);
+
+            single.add(dateLabel);
+            single.add(Box.createVerticalStrut(14));
+            single.add(wrapper);
+
+            chartContainer.add(single, BorderLayout.CENTER);
+            chartContainer.revalidate();
+            chartContainer.repaint();
+            return;
+        }
 
         double avgTMax = data.stream().mapToDouble(DailyData::tempMax).average().orElse(0);
         double avgTMin = data.stream().mapToDouble(DailyData::tempMin).average().orElse(0);
