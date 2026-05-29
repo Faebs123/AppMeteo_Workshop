@@ -72,6 +72,7 @@ public class WeatherController {
         String label = cityLabel();
         Theme theme = themeForTimezone();
         Labels labels = new Labels(theme);
+        view.setTimezone(timezone);
         view.showHome(label, labels, theme);
     }
 
@@ -80,6 +81,7 @@ public class WeatherController {
         String desc = weatherDescription(lastData.code());
         Theme theme = themeForTimezone();
         Labels labels = new Labels(theme);
+        view.setTimezone(timezone);
         view.showCurrentPanel(label, lastData, desc, labels, theme);
     }
 
@@ -87,6 +89,7 @@ public class WeatherController {
         String label = cityLabel();
         Theme theme = themeForTimezone();
         Labels labels = new Labels(theme);
+        view.setTimezone(timezone);
         view.showForecastPanel(label, labels, theme);
     }
 

@@ -19,6 +19,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainFrame extends JFrame {
     private final JPanel contentPanel;
@@ -32,6 +35,8 @@ public class MainFrame extends JFrame {
     private boolean searchDone;
     private WeatherController controller;
     private ForecastPanel currentForecastPanel;
+    private final JLabel timeLabel;
+    private Timer clockTimer;
 
     public MainFrame(Labels labels, Theme theme) {
         super("Meteo App");
@@ -185,6 +190,12 @@ public class MainFrame extends JFrame {
 
         searchRow.add(glassBar);
 
+        timeLabel = new JLabel("");
+        timeLabel.setFont(new Font("SansSerif", Font.BOLD, 36));
+        timeLabel.setForeground(new Color(255, 215, 0));
+        timeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        timeLabel.setVisible(false);
+
         errorLabel = labels.error("");
         errorLabel.setVisible(false);
 
@@ -198,7 +209,12 @@ public class MainFrame extends JFrame {
         root.add(titleWrapper);
         root.add(Box.createVerticalStrut(14));
         root.add(searchRow);
-        root.add(Box.createVerticalStrut(6));
+        root.add(Box.createVerticalStrut(4));
+        JPanel timeWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        timeWrapper.setOpaque(false);
+        timeWrapper.add(timeLabel);
+        root.add(timeWrapper);
+        root.add(Box.createVerticalStrut(4));
         root.add(errorLabel);
         root.add(Box.createVerticalStrut(2));
         root.add(skeleton);
@@ -255,6 +271,20 @@ public class MainFrame extends JFrame {
         root.applyTheme(theme);
         title.setForeground(theme.textPrimary());
         titlePanel.setBackground(theme.cardBackground());
+    }
+
+    public void setTimezone(String tz) {
+        if (clockTimer != null) clockTimer.stop();
+        if (tz == null || tz.isBlank()) {
+            timeLabel.setVisible(false);
+            return;
+        }
+        timeLabel.setVisible(true);
+        clockTimer = new Timer(1000, e -> {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of(tz));
+            timeLabel.setText("\uD83D\uDD50 " + now.format(DateTimeFormatter.ofPattern("HH:mm")));
+        });
+        clockTimer.start();
     }
 
     public void showHome(String cityLabel, Labels labels, Theme theme) {
