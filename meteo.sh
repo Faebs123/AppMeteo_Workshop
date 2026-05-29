@@ -24,6 +24,7 @@ case "$OS" in
     darwin)  CACHE_DIR="$HOME/Library/Caches/meteo-app" ;;
 esac
 JACKSON_HOME="$CACHE_DIR/jackson"
+FLATLAF_HOME="$CACHE_DIR/flatlaf"
 
 # Install shortcut
 if [ "${1:-}" = "--install" ]; then
@@ -57,6 +58,16 @@ if [ ! -f "$JACKSON_HOME/jackson-databind.jar" ]; then
 fi
 JACKSON_LIBS=$(printf '%s:' "$JACKSON_HOME"/*.jar | sed 's/:$//')
 
+# Download FlatLaf
+FLATLAF_VERSION=3.7.1
+if [ ! -f "$FLATLAF_HOME/flatlaf.jar" ]; then
+    echo "Downloading FlatLaf $FLATLAF_VERSION..."
+    mkdir -p "$FLATLAF_HOME"
+    curl -#L -o "$FLATLAF_HOME/flatlaf.jar" \
+        "https://repo1.maven.org/maven2/com/formdev/flatlaf/${FLATLAF_VERSION}/flatlaf-${FLATLAF_VERSION}.jar"
+fi
+FLATLAF_LIBS="$FLATLAF_HOME/flatlaf.jar"
+
 # Prepare temp source tree
 BASE="$WORK_DIR/com/example/weather"
 find src/main/java/com/example/weather -name '*.java' | while read -r f; do
@@ -65,10 +76,12 @@ find src/main/java/com/example/weather -name '*.java' | while read -r f; do
     cp "$f" "$BASE/$rel"
 done
 
+ALL_LIBS="${JACKSON_LIBS}:${FLATLAF_LIBS}"
+
 # Compile
 echo 'Compiling Java sources...'
-javac -d "$WORK_DIR/classes" -cp "$JACKSON_LIBS" $(find "$BASE" -name '*.java')
+javac -d "$WORK_DIR/classes" -cp "$ALL_LIBS" $(find "$BASE" -name '*.java')
 
 # Run the app
 echo 'Launching Meteo App...'
-java -cp "$WORK_DIR/classes:$JACKSON_LIBS" com.example.weather.WeatherApp
+java -cp "$WORK_DIR/classes:${ALL_LIBS}" com.example.weather.WeatherApp

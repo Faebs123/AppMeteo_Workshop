@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VERSION="1.0"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/meteo-app-build"
 JACKSON_HOME="$CACHE_DIR/jackson"
+FLATLAF_HOME="$CACHE_DIR/flatlaf"
 WORK_DIR=$(mktemp -d)
 BUILD_DIR="$WORK_DIR/build"
 DIST_DIR="$WORK_DIR/dist"
@@ -31,6 +32,17 @@ fi
 
 JACKSON_LIBS=$(echo "$JACKSON_HOME"/*.jar | tr ' ' ':')
 
+# --- Scarica FlatLaf ---
+FLATLAF_VERSION=3.7.1
+if [ ! -f "$FLATLAF_HOME/flatlaf.jar" ]; then
+    echo "Scarico FlatLaf $FLATLAF_VERSION..."
+    mkdir -p "$FLATLAF_HOME"
+    curl -#L -o "$FLATLAF_HOME/flatlaf.jar" \
+        "https://repo1.maven.org/maven2/com/formdev/flatlaf/${FLATLAF_VERSION}/flatlaf-${FLATLAF_VERSION}.jar"
+fi
+FLATLAF_LIBS="$FLATLAF_HOME/flatlaf.jar"
+ALL_LIBS="${JACKSON_LIBS}:${FLATLAF_LIBS}"
+
 # --- Compila ---
 echo "Compilazione..."
 mkdir -p "$BUILD_DIR/classes"
@@ -40,14 +52,14 @@ find "$SCRIPT_DIR/src/main/java/com/example/weather" -name '*.java' | while read
     mkdir -p "$BASE/$(dirname "$rel")"
     cp "$f" "$BASE/$rel"
 done
-javac -d "$BUILD_DIR/classes" -cp "$JACKSON_LIBS" $(find "$BASE" -name '*.java')
+javac -d "$BUILD_DIR/classes" -cp "$ALL_LIBS" $(find "$BASE" -name '*.java')
 
-# --- Crea fat JAR con Jackson incluso ---
+# --- Crea fat JAR con Jackson e FlatLaf inclusi ---
 echo "Creazione JAR..."
 mkdir -p "$DIST_DIR"
 cd "$BUILD_DIR/classes"
 
-for jar in $(echo "$JACKSON_LIBS" | tr ':' ' '); do
+for jar in $(echo "$ALL_LIBS" | tr ':' ' '); do
     unzip -qo "$jar" -d "$BUILD_DIR/classes/"
 done
 
