@@ -3,13 +3,16 @@ package com.example.weather.forecast.view;
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.ui.Labels;
 import com.example.weather.shared.ui.RoundedPanel;
-import com.example.weather.shared.ui.ToggleButton;
+import com.example.weather.shared.ui.StyledButton;
 import com.example.weather.shared.model.Theme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class ForecastPanel extends JPanel {
@@ -18,7 +21,8 @@ public class ForecastPanel extends JPanel {
     private final Theme theme;
     private ChartPanel chart;
     private final Consumer<Integer> onGenerate;
-    private int selectedDays = 7;
+    private final JSpinner startSpinner;
+    private final JSpinner endSpinner;
 
     public ForecastPanel(Consumer<Integer> onGenerate, Labels labels, Theme theme) {
         this.onGenerate = onGenerate;
@@ -27,26 +31,42 @@ public class ForecastPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
 
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         controls.setOpaque(false);
 
-        ToggleButton oggiBtn = new ToggleButton("Oggi", new Color(100, 140, 255, 80), new Color(59, 130, 246));
-        ToggleButton treBtn = new ToggleButton("3 Giorni", new Color(100, 140, 255, 80), new Color(59, 130, 246));
-        ToggleButton setteBtn = new ToggleButton("7 Giorni", new Color(100, 140, 255, 80), new Color(59, 130, 246));
-        setteBtn.setSelected(true);
+        Date today = new Date();
+        Date weekLater = new Date(today.getTime() + TimeUnit.DAYS.toMillis(6));
 
-        ButtonGroup group = new ButtonGroup();
-        group.add(oggiBtn);
-        group.add(treBtn);
-        group.add(setteBtn);
+        SpinnerDateModel startModel = new SpinnerDateModel(today, null, null, java.util.Calendar.DAY_OF_MONTH);
+        SpinnerDateModel endModel = new SpinnerDateModel(weekLater, null, null, java.util.Calendar.DAY_OF_MONTH);
 
-        oggiBtn.addActionListener(e -> { selectedDays = 1; onGenerate.accept(1); });
-        treBtn.addActionListener(e -> { selectedDays = 3; onGenerate.accept(3); });
-        setteBtn.addActionListener(e -> { selectedDays = 7; onGenerate.accept(7); });
+        startSpinner = new JSpinner(startModel);
+        endSpinner = new JSpinner(endModel);
 
-        controls.add(oggiBtn);
-        controls.add(treBtn);
-        controls.add(setteBtn);
+        SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yyyy");
+        JSpinner.DateEditor startEditor = new JSpinner.DateEditor(startSpinner, "dd/MM/yyyy");
+        JSpinner.DateEditor endEditor = new JSpinner.DateEditor(endSpinner, "dd/MM/yyyy");
+        startSpinner.setEditor(startEditor);
+        endSpinner.setEditor(endEditor);
+
+        startSpinner.setPreferredSize(new Dimension(110, 32));
+        endSpinner.setPreferredSize(new Dimension(110, 32));
+        startSpinner.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        endSpinner.setFont(new Font("SansSerif", Font.PLAIN, 13));
+
+        JButton generateBtn = new StyledButton("Analizza", new Color(59, 130, 246));
+        generateBtn.addActionListener(e -> generate());
+
+        JLabel daLabel = labels.small("Da:");
+        JLabel aLabel = labels.small("A:");
+
+        controls.add(daLabel);
+        controls.add(startSpinner);
+        controls.add(Box.createHorizontalStrut(4));
+        controls.add(aLabel);
+        controls.add(endSpinner);
+        controls.add(Box.createHorizontalStrut(8));
+        controls.add(generateBtn);
 
         chartContainer = new JPanel(new BorderLayout());
         chartContainer.setOpaque(false);
@@ -54,6 +74,20 @@ public class ForecastPanel extends JPanel {
         add(controls);
         add(Box.createVerticalStrut(8));
         add(chartContainer);
+    }
+
+    private void generate() {
+        Date start = (Date) startSpinner.getValue();
+        Date end = (Date) endSpinner.getValue();
+        if (end.before(start)) {
+            Date tmp = start;
+            start = end;
+            end = tmp;
+        }
+        long diffMs = end.getTime() - start.getTime();
+        int days = (int) (TimeUnit.DAYS.convert(diffMs, TimeUnit.MILLISECONDS)) + 1;
+        if (days < 1) days = 1;
+        onGenerate.accept(days);
     }
 
     public void setChart(List<DailyData> data) {
