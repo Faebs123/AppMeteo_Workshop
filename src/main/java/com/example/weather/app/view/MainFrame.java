@@ -5,6 +5,7 @@ import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.ui.GradientPanel;
 import com.example.weather.shared.ui.Labels;
 import com.example.weather.shared.ui.RoundedPanel;
+import com.example.weather.shared.ui.SkeletonPanel;
 import com.example.weather.shared.ui.StyledButton;
 import com.example.weather.shared.model.Theme;
 import com.example.weather.app.controller.WeatherController;
@@ -19,13 +20,13 @@ import java.awt.event.*;
 
 public class MainFrame extends JFrame {
     private final JPanel contentPanel;
-    private final JLabel loadingLabel;
     private final JLabel errorLabel;
     private final JTextField cityField;
     private final Labels labels;
     private final GradientPanel root;
     private final JLabel title;
     private final JPanel titlePanel;
+    private final SkeletonPanel skeleton;
     private WeatherController controller;
     private ForecastPanel currentForecastPanel;
 
@@ -53,54 +54,64 @@ public class MainFrame extends JFrame {
         titleWrapper.setOpaque(false);
         titleWrapper.add(titlePanel);
 
-        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         searchRow.setOpaque(false);
 
-        cityField = new JTextField(18);
+        RoundedPanel glassBar = new RoundedPanel(24);
+        glassBar.setLayout(new BorderLayout(0, 0));
+        glassBar.setBackground(new Color(0, 0, 0, 100));
+        glassBar.setBorder(BorderFactory.createEmptyBorder(2, 14, 2, 4));
+        glassBar.setMaximumSize(new Dimension(380, 44));
+        glassBar.setPreferredSize(new Dimension(380, 44));
+
+        JLabel searchIcon = new JLabel("\uD83D\uDD0D");
+        searchIcon.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        searchIcon.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 8));
+
+        cityField = new JTextField(16);
         cityField.putClientProperty("JTextField.placeholderText", "Roma, Milano, Tokyo...");
         cityField.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        cityField.setPreferredSize(new Dimension(220, 40));
-        cityField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true),
-            BorderFactory.createEmptyBorder(8, 14, 8, 14)));
+        cityField.setBorder(null);
+        cityField.setOpaque(false);
+        cityField.setForeground(Color.WHITE);
+        cityField.setCaretColor(Color.WHITE);
+        cityField.addActionListener(e -> onSearch());
         cityField.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
-                cityField.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(255, 255, 255, 200), 2, true),
-                    BorderFactory.createEmptyBorder(7, 13, 7, 13)));
+                glassBar.setBackground(new Color(0, 0, 0, 150));
             }
             public void focusLost(FocusEvent e) {
-                cityField.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true),
-                    BorderFactory.createEmptyBorder(8, 14, 8, 14)));
+                glassBar.setBackground(new Color(0, 0, 0, 100));
             }
         });
 
-        JButton searchBtn = new StyledButton("CERCA", new Color(59, 130, 246));
-        searchBtn.addActionListener(e -> onSearch());
-        cityField.addActionListener(e -> onSearch());
+        JButton geoBtn = new JButton("\uD83C\uDFAF");
+        geoBtn.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        geoBtn.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        geoBtn.setFocusPainted(false);
+        geoBtn.setOpaque(false);
+        geoBtn.setContentAreaFilled(false);
+        geoBtn.setBorderPainted(false);
+        geoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        geoBtn.addActionListener(e -> onGeolocate());
+        geoBtn.setToolTipText("Geolocalizzazione");
 
-        searchRow.add(cityField);
-        searchRow.add(searchBtn);
+        JPanel glassLeft = new JPanel(new BorderLayout(0, 0));
+        glassLeft.setOpaque(false);
+        glassLeft.add(searchIcon, BorderLayout.WEST);
+        glassLeft.add(cityField, BorderLayout.CENTER);
 
-        loadingLabel = labels.loading("Caricamento...");
-        loadingLabel.setVisible(false);
+        glassBar.add(glassLeft, BorderLayout.CENTER);
+        glassBar.add(geoBtn, BorderLayout.EAST);
+        glassBar.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        javax.swing.Timer pulse = new javax.swing.Timer(600, e -> {
-            Color tp = theme.textPrimary();
-            float a = loadingLabel.getForeground().getAlpha() == 200 ? 100 : 200;
-            loadingLabel.setForeground(new Color(tp.getRed(), tp.getGreen(), tp.getBlue(), (int) a));
-        });
-        pulse.setRepeats(true);
-        loadingLabel.addHierarchyListener(e -> {
-            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0) {
-                if (loadingLabel.isShowing()) pulse.start();
-                else pulse.stop();
-            }
-        });
+        searchRow.add(glassBar);
 
         errorLabel = labels.error("");
         errorLabel.setVisible(false);
+
+        skeleton = new SkeletonPanel(480, 200, 4);
+        skeleton.setVisible(false);
 
         contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -112,7 +123,7 @@ public class MainFrame extends JFrame {
         root.add(Box.createVerticalStrut(6));
         root.add(errorLabel);
         root.add(Box.createVerticalStrut(2));
-        root.add(loadingLabel);
+        root.add(skeleton);
         root.add(Box.createVerticalStrut(12));
         root.add(contentPanel);
 
@@ -129,8 +140,12 @@ public class MainFrame extends JFrame {
             controller.search(city);
     }
 
+    private void onGeolocate() {
+        if (controller != null) controller.geolocate();
+    }
+
     public void showLoading(boolean visible) {
-        loadingLabel.setVisible(visible);
+        skeleton.setVisible(visible);
     }
 
     public void showError(String message) {

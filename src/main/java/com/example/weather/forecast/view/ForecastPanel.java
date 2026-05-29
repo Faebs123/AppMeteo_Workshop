@@ -2,7 +2,8 @@ package com.example.weather.forecast.view;
 
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.ui.Labels;
-import com.example.weather.shared.ui.StyledButton;
+import com.example.weather.shared.ui.RoundedPanel;
+import com.example.weather.shared.ui.ToggleButton;
 import com.example.weather.shared.model.Theme;
 
 import javax.swing.*;
@@ -12,34 +13,46 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class ForecastPanel extends JPanel {
-    private final JSpinner daySpinner;
     private final JPanel chartContainer;
     private final Labels labels;
     private final Theme theme;
+    private ChartPanel chart;
+    private final Consumer<Integer> onGenerate;
+    private int selectedDays = 7;
 
     public ForecastPanel(Consumer<Integer> onGenerate, Labels labels, Theme theme) {
+        this.onGenerate = onGenerate;
         this.labels = labels;
         this.theme = theme;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
 
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
         controls.setOpaque(false);
-        JLabel dayLabel = labels.small("Giorni:");
-        daySpinner = new JSpinner(new SpinnerNumberModel(7, 1, 16, 1));
-        daySpinner.setPreferredSize(new Dimension(70, 30));
 
-        JButton generateBtn = new StyledButton("Genera", new Color(59, 130, 246));
-        generateBtn.addActionListener(e -> onGenerate.accept((Integer) daySpinner.getValue()));
+        ToggleButton oggiBtn = new ToggleButton("Oggi", new Color(100, 140, 255, 80), new Color(59, 130, 246));
+        ToggleButton treBtn = new ToggleButton("3 Giorni", new Color(100, 140, 255, 80), new Color(59, 130, 246));
+        ToggleButton setteBtn = new ToggleButton("7 Giorni", new Color(100, 140, 255, 80), new Color(59, 130, 246));
+        setteBtn.setSelected(true);
 
-        controls.add(dayLabel);
-        controls.add(daySpinner);
-        controls.add(generateBtn);
+        ButtonGroup group = new ButtonGroup();
+        group.add(oggiBtn);
+        group.add(treBtn);
+        group.add(setteBtn);
+
+        oggiBtn.addActionListener(e -> { selectedDays = 1; onGenerate.accept(1); });
+        treBtn.addActionListener(e -> { selectedDays = 3; onGenerate.accept(3); });
+        setteBtn.addActionListener(e -> { selectedDays = 7; onGenerate.accept(7); });
+
+        controls.add(oggiBtn);
+        controls.add(treBtn);
+        controls.add(setteBtn);
 
         chartContainer = new JPanel(new BorderLayout());
         chartContainer.setOpaque(false);
 
         add(controls);
+        add(Box.createVerticalStrut(8));
         add(chartContainer);
     }
 
@@ -50,14 +63,14 @@ public class ForecastPanel extends JPanel {
         double avgTMin = data.stream().mapToDouble(DailyData::tempMin).average().orElse(0);
         double avgWind = data.stream().mapToDouble(DailyData::windMax).average().orElse(0);
 
-        JPanel avgs = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        JPanel avgs = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         avgs.setOpaque(false);
-        avgs.setBorder(new EmptyBorder(10, 0, 6, 0));
-        avgs.add(avgBox("T Max media", String.format("%.1f\u00b0C", avgTMax), new Color(255, 107, 107)));
-        avgs.add(avgBox("T Min media", String.format("%.1f\u00b0C", avgTMin), new Color(78, 205, 196)));
-        avgs.add(avgBox("Vento medio", String.format("%.0f km/h", avgWind), new Color(255, 230, 109)));
+        avgs.setBorder(new EmptyBorder(10, 0, 8, 0));
+        avgs.add(avgCard("T Max media", String.format("%.1f\u00b0C", avgTMax), new Color(255, 107, 107)));
+        avgs.add(avgCard("T Min media", String.format("%.1f\u00b0C", avgTMin), new Color(78, 205, 196)));
+        avgs.add(avgCard("Vento medio", String.format("%.0f km/h", avgWind), new Color(255, 230, 109)));
 
-        ChartPanel chart = new ChartPanel(data);
+        chart = new ChartPanel(data);
 
         JPanel legend = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         legend.setOpaque(false);
@@ -65,23 +78,37 @@ public class ForecastPanel extends JPanel {
         Color[] cols = {new Color(255, 107, 107), new Color(78, 205, 196), new Color(255, 230, 109)};
         String[] names = {"T Max", "T Min", "Vento"};
         for (int i = 0; i < 3; i++) {
-            final Color ci = cols[i];
-            final String ni = names[i];
+            final int idx = i;
             JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
             item.setOpaque(false);
+            item.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             JPanel dot = new JPanel() {
-                public Dimension getPreferredSize() { return new Dimension(10, 10); }
+                public Dimension getPreferredSize() { return new Dimension(12, 12); }
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g;
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(ci);
-                    g2.fillOval(0, 0, 10, 10);
+                    if (chart.isSeriesVisible(idx)) {
+                        g2.setColor(cols[idx]);
+                        g2.fillOval(0, 0, 12, 12);
+                    } else {
+                        g2.setColor(new Color(255, 255, 255, 40));
+                        g2.drawOval(0, 0, 12, 12);
+                    }
                 }
             };
             dot.setOpaque(false);
-            JLabel lbl = labels.small(ni);
+            JLabel lbl = labels.small(names[i]);
+            if (!chart.isSeriesVisible(idx)) lbl.setForeground(new Color(255, 255, 255, 60));
             item.add(dot);
             item.add(lbl);
+            item.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    boolean now = !chart.isSeriesVisible(idx);
+                    chart.setSeriesVisible(idx, now);
+                    lbl.setForeground(now ? theme.textMuted() : new Color(255, 255, 255, 60));
+                    dot.repaint();
+                }
+            });
             legend.add(item);
         }
 
@@ -96,16 +123,16 @@ public class ForecastPanel extends JPanel {
         chartContainer.repaint();
     }
 
-    private JPanel avgBox(String label, String value, Color color) {
-        JPanel box = new JPanel();
-        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
-        box.setOpaque(false);
-        box.setBackground(new Color(255, 255, 255, 30));
-        box.setBorder(new EmptyBorder(10, 14, 10, 14));
+    private JPanel avgCard(String label, String value, Color color) {
+        RoundedPanel card = new RoundedPanel(14);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(new Color(255, 255, 255, 25));
+        card.setBorder(new EmptyBorder(10, 16, 10, 16));
+        card.setAlignmentY(Component.CENTER_ALIGNMENT);
         JLabel val = labels.value(value, color);
         JLabel lbl = labels.small(label);
-        box.add(val);
-        box.add(lbl);
-        return box;
+        card.add(val);
+        card.add(lbl);
+        return card;
     }
 }

@@ -94,6 +94,10 @@ public class WeatherController {
         return lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
     }
 
+    public void geolocate() {
+        view.showError("Geolocalizzazione non disponibile. Digita il nome della citt\u00e0.");
+    }
+
     public void generateReport(int days) {
         SwingWorker<List<DailyData>, Void> worker = new SwingWorker<>() {
             @Override
