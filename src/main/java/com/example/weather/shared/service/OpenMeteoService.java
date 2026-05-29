@@ -42,6 +42,23 @@ public class OpenMeteoService extends WeatherService {
     }
 
     @Override
+    public List<String[]> suggestCities(String query) throws Exception {
+        String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String url = "https://geocoding-api.open-meteo.com/v1/search?name=" + encoded
+                + "&count=5&language=it&format=json";
+        JsonNode data = fetchJson(url);
+        JsonNode results = data.get("results");
+        List<String[]> list = new ArrayList<>();
+        if (results == null || !results.isArray()) return list;
+        for (JsonNode r : results) {
+            String name = r.has("name") ? r.get("name").asText() : "";
+            String country = r.has("country_code") ? r.get("country_code").asText().toUpperCase() : "";
+            list.add(new String[]{name, country});
+        }
+        return list;
+    }
+
+    @Override
     public WeatherData fetchCurrent(GeocodeResult loc) throws Exception {
         String url = String.format(
             "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f" +

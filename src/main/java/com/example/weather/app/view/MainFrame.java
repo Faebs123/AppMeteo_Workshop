@@ -15,6 +15,8 @@ import com.example.weather.search.view.HomePanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -27,6 +29,7 @@ public class MainFrame extends JFrame {
     private final JLabel title;
     private final JPanel titlePanel;
     private final SkeletonPanel skeleton;
+    private boolean searchDone;
     private WeatherController controller;
     private ForecastPanel currentForecastPanel;
 
@@ -85,6 +88,81 @@ public class MainFrame extends JFrame {
             }
         });
 
+        JPopupMenu suggestionPopup = new JPopupMenu();
+        suggestionPopup.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        suggestionPopup.setFocusable(false);
+
+        DefaultListModel<String> listModel = new DefaultListModel<>();
+        JList<String> suggestionList = new JList<>(listModel);
+        suggestionList.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        suggestionList.setForeground(Color.WHITE);
+        suggestionList.setBackground(new Color(30, 30, 30, 230));
+        suggestionList.setSelectionBackground(new Color(59, 130, 246));
+        suggestionList.setSelectionForeground(Color.WHITE);
+        suggestionList.setFixedCellHeight(28);
+        suggestionList.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+
+        suggestionList.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                int idx = suggestionList.locationToIndex(e.getPoint());
+                if (idx >= 0) {
+                    selectSuggestion(listModel.getElementAt(idx), listModel, suggestionPopup);
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(suggestionList);
+        scrollPane.setBorder(null);
+        scrollPane.setPreferredSize(new Dimension(280, 140));
+        suggestionPopup.add(scrollPane);
+        suggestionPopup.setOpaque(false);
+
+        javax.swing.Timer debounce = new javax.swing.Timer(300, e -> {
+            String text = cityField.getText().trim();
+            if (text.length() >= 1 && !searchDone && controller != null)
+                controller.suggestCities(text, listModel, suggestionPopup, cityField);
+        });
+        debounce.setRepeats(false);
+
+        cityField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { searchDone = false; debounce.restart(); }
+            public void removeUpdate(DocumentEvent e) { searchDone = false; debounce.restart(); }
+            public void changedUpdate(DocumentEvent e) { searchDone = false; debounce.restart(); }
+        });
+        cityField.addKeyListener(new KeyAdapter() {
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_DOWN && suggestionPopup.isVisible()) {
+                    int i = suggestionList.getSelectedIndex();
+                    suggestionList.setSelectedIndex(Math.min(i + 1, listModel.getSize() - 1));
+                    suggestionList.ensureIndexIsVisible(suggestionList.getSelectedIndex());
+                }
+                if (e.getKeyCode() == KeyEvent.VK_UP && suggestionPopup.isVisible()) {
+                    int i = suggestionList.getSelectedIndex();
+                    suggestionList.setSelectedIndex(Math.max(i - 1, 0));
+                    suggestionList.ensureIndexIsVisible(suggestionList.getSelectedIndex());
+                }
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    String selected = suggestionList.getSelectedValue();
+                    if (selected != null && suggestionPopup.isVisible()) {
+                        selectSuggestion(selected, listModel, suggestionPopup);
+                    } else {
+                        onSearch();
+                    }
+                }
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                    suggestionPopup.setVisible(false);
+            }
+        });
+
+        cityField.addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                Component opposite = e.getOppositeComponent();
+                if (opposite == null || (!SwingUtilities.isDescendingFrom(opposite, suggestionPopup)
+                    && opposite != cityField))
+                    suggestionPopup.setVisible(false);
+            }
+        });
+
         JButton geoBtn = new JButton("\uD83C\uDFAF");
         geoBtn.setFont(new Font("SansSerif", Font.PLAIN, 18));
         geoBtn.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
@@ -136,8 +214,18 @@ public class MainFrame extends JFrame {
 
     private void onSearch() {
         String city = cityField.getText().trim();
-        if (!city.isEmpty() && controller != null)
+        if (!city.isEmpty() && controller != null) {
+            searchDone = true;
             controller.search(city);
+        }
+    }
+
+    private void selectSuggestion(String entry, DefaultListModel<String> listModel, JPopupMenu popup) {
+        String city = entry.replaceFirst(",.*", "").trim();
+        cityField.setText(city);
+        popup.setVisible(false);
+        searchDone = true;
+        onSearch();
     }
 
     private void onGeolocate() {

@@ -8,6 +8,7 @@ import java.util.List;
 
 public abstract class WeatherService {
     public abstract GeocodeResult geocode(String city) throws Exception;
+    public abstract List<String[]> suggestCities(String query) throws Exception;
     public abstract WeatherData fetchCurrent(GeocodeResult location) throws Exception;
     public abstract List<DailyData> fetchForecast(double lat, double lon, String startDate, String endDate) throws Exception;
 }

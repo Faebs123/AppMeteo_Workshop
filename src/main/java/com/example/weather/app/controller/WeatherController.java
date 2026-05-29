@@ -94,6 +94,29 @@ public class WeatherController {
         return lastData.city() + (lastData.country().isEmpty() ? "" : ", " + lastData.country());
     }
 
+    public void suggestCities(String query, DefaultListModel<String> listModel, JPopupMenu popup, JTextField field) {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                java.util.List<String[]> suggestions = service.suggestCities(query);
+                SwingUtilities.invokeLater(() -> {
+                    listModel.clear();
+                    if (suggestions.isEmpty()) { popup.setVisible(false); return; }
+                    if (suggestions.size() == 1) {
+                        popup.setVisible(false);
+                        return;
+                    }
+                    for (String[] s : suggestions)
+                        listModel.addElement(s[0] + (s[1].isEmpty() ? "" : ", " + s[1]));
+                    popup.show(field, 0, field.getHeight());
+                    field.requestFocusInWindow();
+                });
+                return null;
+            }
+        };
+        worker.execute();
+    }
+
     public void geolocate() {
         view.showError("Geolocalizzazione non disponibile. Digita il nome della citt\u00e0.");
     }
