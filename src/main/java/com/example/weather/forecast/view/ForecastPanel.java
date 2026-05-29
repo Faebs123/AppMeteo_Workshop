@@ -1,9 +1,9 @@
-package com.example.weather.forecast;
+package com.example.weather.forecast.view;
 
 import com.example.weather.shared.model.DailyData;
-import com.example.weather.shared.widget.Labels;
-import com.example.weather.shared.widget.StyledButton;
-import com.example.weather.shared.widget.Theme;
+import com.example.weather.shared.ui.Labels;
+import com.example.weather.shared.ui.StyledButton;
+import com.example.weather.shared.model.Theme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

@@ -1,4 +1,7 @@
-package com.example.weather.shared.widget;
+package com.example.weather.shared.ui;
+
+import com.example.weather.shared.core.ColorUtils;
+import com.example.weather.shared.model.Theme;
 
 import javax.swing.*;
 import java.awt.*;

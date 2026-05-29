@@ -1,7 +1,7 @@
-package com.example.weather.search;
+package com.example.weather.search.view;
 
-import com.example.weather.shared.widget.Labels;
-import com.example.weather.shared.widget.StyledButton;
+import com.example.weather.shared.ui.Labels;
+import com.example.weather.shared.ui.StyledButton;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,9 +1,9 @@
-package com.example.weather.current;
+package com.example.weather.current.view;
 
 import com.example.weather.shared.model.WeatherData;
-import com.example.weather.shared.widget.Labels;
-import com.example.weather.shared.widget.RoundedPanel;
-import com.example.weather.shared.widget.Theme;
+import com.example.weather.shared.ui.Labels;
+import com.example.weather.shared.ui.RoundedPanel;
+import com.example.weather.shared.model.Theme;
 
 import javax.swing.*;
 import java.awt.*;

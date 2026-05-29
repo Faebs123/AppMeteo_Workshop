@@ -1,4 +1,4 @@
-package com.example.weather.forecast;
+package com.example.weather.forecast.view;
 
 import com.example.weather.shared.model.DailyData;
 

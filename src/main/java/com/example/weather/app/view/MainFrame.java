@@ -1,15 +1,16 @@
-package com.example.weather.app;
+package com.example.weather.app.view;
 
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.model.WeatherData;
-import com.example.weather.shared.widget.GradientPanel;
-import com.example.weather.shared.widget.Labels;
-import com.example.weather.shared.widget.RoundedPanel;
-import com.example.weather.shared.widget.StyledButton;
-import com.example.weather.shared.widget.Theme;
-import com.example.weather.current.CurrentPanel;
-import com.example.weather.forecast.ForecastPanel;
-import com.example.weather.search.HomePanel;
+import com.example.weather.shared.ui.GradientPanel;
+import com.example.weather.shared.ui.Labels;
+import com.example.weather.shared.ui.RoundedPanel;
+import com.example.weather.shared.ui.StyledButton;
+import com.example.weather.shared.model.Theme;
+import com.example.weather.app.controller.WeatherController;
+import com.example.weather.current.view.CurrentPanel;
+import com.example.weather.forecast.view.ForecastPanel;
+import com.example.weather.search.view.HomePanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

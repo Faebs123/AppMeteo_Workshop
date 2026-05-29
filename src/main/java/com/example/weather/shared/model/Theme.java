@@ -1,4 +1,4 @@
-package com.example.weather.shared.widget;
+package com.example.weather.shared.model;
 
 import java.awt.*;
 

@@ -1,13 +1,13 @@
-package com.example.weather.app;
+package com.example.weather.app.controller;
 
 import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.model.GeocodeResult;
 import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.service.WeatherService;
-import com.example.weather.shared.widget.Labels;
-import com.example.weather.shared.widget.Theme;
-import com.example.weather.shared.widget.ThemeEngine;
-import com.example.weather.app.MainFrame;
+import com.example.weather.shared.ui.Labels;
+import com.example.weather.shared.model.Theme;
+import com.example.weather.shared.service.ThemeEngine;
+import com.example.weather.app.view.MainFrame;
 
 import javax.swing.*;
 import java.time.ZoneId;
