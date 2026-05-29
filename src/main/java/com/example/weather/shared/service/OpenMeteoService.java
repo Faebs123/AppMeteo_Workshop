@@ -8,18 +8,14 @@ import com.example.weather.shared.service.WeatherService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class OpenMeteoService extends WeatherService {
-    private final HttpClient client = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_2).build();
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -97,10 +93,13 @@ public class OpenMeteoService extends WeatherService {
     }
 
     private JsonNode fetchJson(String url) throws Exception {
-        HttpRequest req = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-        HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-        if (resp.statusCode() != 200)
-            throw new RuntimeException("Errore API: " + resp.statusCode() + " " + resp.body());
-        return mapper.readTree(resp.body());
+        HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(10000);
+        int status = conn.getResponseCode();
+        if (status != 200)
+            throw new RuntimeException("Errore API: " + status);
+        return mapper.readTree(conn.getInputStream());
     }
 }

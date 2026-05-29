@@ -97,7 +97,7 @@ public class WeatherApp {
         UIManager.put("ProgressBar.arc", 12);
         UIManager.put("ProgressBar.foreground", sunGold);
 
-        String fontName = "Segoe UI";
+        String fontName = "SansSerif";
         if (Font.decode(fontName).getFamily().equals(fontName)) {
             UIManager.put("defaultFont", new Font(fontName, Font.PLAIN, 14));
         }
