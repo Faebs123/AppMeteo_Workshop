@@ -2,6 +2,7 @@ package com.example.weather.shared.widget;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Objects;
 
 public class GradientPanel extends JPanel {
     private Color currentTop;
@@ -14,6 +15,7 @@ public class GradientPanel extends JPanel {
     }
 
     public void applyTheme(Theme theme) {
+        Objects.requireNonNull(theme);
         Color targetTop = theme.gradientTop();
         Color targetBottom = theme.gradientBottom();
 
@@ -31,8 +33,8 @@ public class GradientPanel extends JPanel {
             long elapsed = System.currentTimeMillis() - startTime;
             double t = Math.min(1.0, (double) elapsed / duration);
             double ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-            currentTop = lerp(startTop, targetTop, ease);
-            currentBottom = lerp(startBottom, targetBottom, ease);
+            currentTop = ColorUtils.lerp(startTop, targetTop, ease);
+            currentBottom = ColorUtils.lerp(startBottom, targetBottom, ease);
             repaint();
             if (t >= 1.0) ((Timer) e.getSource()).stop();
         });
@@ -46,17 +48,5 @@ public class GradientPanel extends JPanel {
         int w = getWidth(), h = getHeight();
         g2.setPaint(new GradientPaint(0, 0, currentTop, 0, h, currentBottom));
         g2.fillRect(0, 0, w, h);
-    }
-
-    private static Color lerp(Color a, Color b, double t) {
-        return new Color(
-            clamp(a.getRed() + (int) Math.round((b.getRed() - a.getRed()) * t)),
-            clamp(a.getGreen() + (int) Math.round((b.getGreen() - a.getGreen()) * t)),
-            clamp(a.getBlue() + (int) Math.round((b.getBlue() - a.getBlue()) * t)),
-            clamp(a.getAlpha() + (int) Math.round((b.getAlpha() - a.getAlpha()) * t)));
-    }
-
-    private static int clamp(int v) {
-        return Math.max(0, Math.min(255, v));
     }
 }

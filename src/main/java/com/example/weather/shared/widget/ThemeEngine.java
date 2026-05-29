@@ -77,6 +77,7 @@ public class ThemeEngine {
     };
 
     public static Theme forHour(int hour) {
+        hour = Math.max(0, Math.min(23, hour));
         for (int i = 0; i < KEYFRAMES.length - 1; i++) {
             if (hour >= KEYFRAMES[i].hour() && hour < KEYFRAMES[i + 1].hour()) {
                 double t = KEYFRAMES[i].hour() == KEYFRAMES[i + 1].hour() ? 0
@@ -84,37 +85,27 @@ public class ThemeEngine {
                 return interpolate(KEYFRAMES[i], KEYFRAMES[i + 1], t);
             }
         }
-        return toTheme(KEYFRAMES[KEYFRAMES.length - 1]);
+        return new Theme(
+            KEYFRAMES[KEYFRAMES.length - 1].gradientTop(),
+            KEYFRAMES[KEYFRAMES.length - 1].gradientBottom(),
+            KEYFRAMES[KEYFRAMES.length - 1].textPrimary(),
+            KEYFRAMES[KEYFRAMES.length - 1].textSecondary(),
+            KEYFRAMES[KEYFRAMES.length - 1].textMuted(),
+            KEYFRAMES[KEYFRAMES.length - 1].cardBackground(),
+            KEYFRAMES[KEYFRAMES.length - 1].separator(),
+            KEYFRAMES[KEYFRAMES.length - 1].errorText());
     }
 
     private static Theme interpolate(KeyFrame a, KeyFrame b, double t) {
         return new Theme(
-            lerp(a.gradientTop(), b.gradientTop(), t),
-            lerp(a.gradientBottom(), b.gradientBottom(), t),
-            lerp(a.textPrimary(), b.textPrimary(), t),
-            lerp(a.textSecondary(), b.textSecondary(), t),
-            lerp(a.textMuted(), b.textMuted(), t),
-            lerp(a.cardBackground(), b.cardBackground(), t),
-            lerp(a.separator(), b.separator(), t),
-            lerp(a.errorText(), b.errorText(), t));
-    }
-
-    private static Color lerp(Color a, Color b, double t) {
-        return new Color(
-            clamp(a.getRed() + (int) Math.round((b.getRed() - a.getRed()) * t)),
-            clamp(a.getGreen() + (int) Math.round((b.getGreen() - a.getGreen()) * t)),
-            clamp(a.getBlue() + (int) Math.round((b.getBlue() - a.getBlue()) * t)),
-            clamp(a.getAlpha() + (int) Math.round((b.getAlpha() - a.getAlpha()) * t)));
-    }
-
-    private static Theme toTheme(KeyFrame kf) {
-        return new Theme(kf.gradientTop(), kf.gradientBottom(),
-            kf.textPrimary(), kf.textSecondary(), kf.textMuted(),
-            kf.cardBackground(), kf.separator(), kf.errorText());
-    }
-
-    private static int clamp(int v) {
-        return Math.max(0, Math.min(255, v));
+            ColorUtils.lerp(a.gradientTop(), b.gradientTop(), t),
+            ColorUtils.lerp(a.gradientBottom(), b.gradientBottom(), t),
+            ColorUtils.lerp(a.textPrimary(), b.textPrimary(), t),
+            ColorUtils.lerp(a.textSecondary(), b.textSecondary(), t),
+            ColorUtils.lerp(a.textMuted(), b.textMuted(), t),
+            ColorUtils.lerp(a.cardBackground(), b.cardBackground(), t),
+            ColorUtils.lerp(a.separator(), b.separator(), t),
+            ColorUtils.lerp(a.errorText(), b.errorText(), t));
     }
 
     private static Color color(int hex) {

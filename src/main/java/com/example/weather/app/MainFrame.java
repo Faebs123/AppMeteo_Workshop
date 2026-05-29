@@ -4,6 +4,7 @@ import com.example.weather.shared.model.DailyData;
 import com.example.weather.shared.model.WeatherData;
 import com.example.weather.shared.widget.GradientPanel;
 import com.example.weather.shared.widget.Labels;
+import com.example.weather.shared.widget.RoundedPanel;
 import com.example.weather.shared.widget.StyledButton;
 import com.example.weather.shared.widget.Theme;
 import com.example.weather.current.CurrentPanel;
@@ -20,7 +21,6 @@ public class MainFrame extends JFrame {
     private final JLabel loadingLabel;
     private final JLabel errorLabel;
     private final JTextField cityField;
-    private final Theme theme;
     private final Labels labels;
     private final GradientPanel root;
     private final JLabel title;
@@ -31,7 +31,6 @@ public class MainFrame extends JFrame {
     public MainFrame(Labels labels, Theme theme) {
         super("Meteo App");
         this.labels = labels;
-        this.theme = theme;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(700, 720);
         setLocationRelativeTo(null);
@@ -42,12 +41,16 @@ public class MainFrame extends JFrame {
 
         title = labels.title("Meteo App");
 
-        titlePanel = new com.example.weather.shared.widget.RoundedPanel(16);
+        titlePanel = new RoundedPanel(12);
         titlePanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
         titlePanel.setBackground(theme.cardBackground());
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(6, 20, 6, 20));
         titlePanel.add(title);
         titlePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPanel titleWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        titleWrapper.setOpaque(false);
+        titleWrapper.add(titlePanel);
 
         JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         searchRow.setOpaque(false);
@@ -102,7 +105,7 @@ public class MainFrame extends JFrame {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
 
-        root.add(titlePanel);
+        root.add(titleWrapper);
         root.add(Box.createVerticalStrut(14));
         root.add(searchRow);
         root.add(Box.createVerticalStrut(6));
